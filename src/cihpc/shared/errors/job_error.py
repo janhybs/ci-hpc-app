@@ -1,0 +1,3 @@
+
+class JobError(Exception):
+    pass
