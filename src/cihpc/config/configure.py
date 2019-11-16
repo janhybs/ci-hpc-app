@@ -69,7 +69,6 @@ def configure(template: str, context: Dict=None, keep_missing=True):
                 return template
             raise
 
-
     return _configure_object_regex.sub(_replace, str(template))
 
 
@@ -86,4 +85,4 @@ def configure_recursive(o: Union[Iterable, Dict, str], context: Dict=None, keep_
     if isinstance(o, Iterable):
         return [configure_recursive(value, context, keep_missing) for value in o]
 
-    raise ConfigError(f"Unsupported type {type(o)}")
+    return o

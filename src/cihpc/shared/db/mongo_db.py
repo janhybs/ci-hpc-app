@@ -5,9 +5,11 @@ from loguru import logger
 from pymongo import MongoClient
 
 from cihpc.shared.db.cols.col_index_info import ColIndexInfo
+from cihpc.shared.db.cols.col_index_stat import ColIndexStat
 from cihpc.shared.db.cols.col_schedule import ColScheduler
 from cihpc.shared.db.cols.col_timers import ColTimer
 from cihpc.shared.db.models import IdEntity
+from cihpc.shared.errors.config_error import ConfigError
 from cihpc.shared.g import G
 
 
@@ -43,7 +45,11 @@ class MongoImpl(object):
     def __init__(self, project_name):
         self.project_name = project_name
         self.config = G.get_secret(self.project_name)
-        self.config_database, self.config_artifacts = self.config["database"], self.config["artifacts"]
+        if not self.config:
+            raise ConfigError("Could not find db configuration")
+
+        self.config_database = self.config.get("database", {})
+        self.config_artifacts = self.config.get("artifacts", {})
 
         # create connection dict
         self.config_database['connect'] = True
@@ -58,18 +64,20 @@ class MongoImpl(object):
             self.db.get_collection(self.config_artifacts.get('col_timers_name', f'timers-{G.version}')),
             ColTimer
         )
-        self.col_index = MongoCollection(
+        self.col_index_info = MongoCollection(
             self.db.get_collection(self.config_artifacts.get('col_index_info_name', f'indexinfo-{G.version}')),
             ColIndexInfo
+        )
+        self.col_index_stat = MongoCollection(
+            self.db.get_collection(self.config_artifacts.get('col_index_stat_name', f'indestat-{G.version}')),
+            ColIndexStat
         )
         self.col_scheduler = MongoCollection(
             self.db.get_collection(self.config_artifacts.get('col_scheduler_name', f'scheduler-{G.version}')),
             ColScheduler
         )
 
-        logger.debug(f'connected: {self}, {self.db.name}:{{{self.col_timers.name}, {self.col_index.name}, {self.col_scheduler.name}}}')
-
-        self.col_timers = self.client
+        logger.debug(f'connected: {self}, {self.db.name}:{{{self.col_timers.name}, {self.col_index_info.name}, {self.col_scheduler.name}}}')
 
     def __repr__(self):
         return 'Mongo({self.client.address[0]}:{self.client.address[1]})'.format(self=self)

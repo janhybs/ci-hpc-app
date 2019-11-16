@@ -1,0 +1,13 @@
+- matrix:
+  - test:
+    - id: 1
+      name: memory-cache-test-l1
+
+    - id: 2
+      name: memory-cache-test-l2
+      
+    - id: 3
+      name: memory-cache-test-l3
+
+    - id: 0
+      name: memory-cache-test-all

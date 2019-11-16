@@ -1,0 +1,28 @@
+# glob expression by which we find the current profiler file
+files: <tmpdir>/result-<uuid>-<test['id']>.json
+# when done processing, optionally detele
+delete-after: False
+# module which is used as a parser
+module: generic-json
+
+# extra fields, which will be added to the report as an index
+extra:
+  project:    < name >
+  commit:     < git.commit >
+  branch:     < git.branch >
+
+  job:        < job.name >
+  test:       < name >
+  benchmark:  < test['name'] >
+  mesh:       < str(test['id']) >
+  cpus:       1
+
+  frame:      null
+  uuid:       < uuid >
+  host:       < hostname >
+
+  # mesh_cpus:  << int(mesh.split("_")[0]) >>
+  # mesh_size:  << int(mesh.split("_")[1]) >>
+
+  # weak:       << int(mesh.split("_")[0]) == cpus >>
+  # strong:     << int(mesh.split("_")[0]) <= cpus >>

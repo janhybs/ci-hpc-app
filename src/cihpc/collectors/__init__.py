@@ -1,6 +1,9 @@
+import json
 import subprocess
 from pathlib import Path
 from typing import Dict, List
+
+from loguru import logger
 
 from cihpc.shared.utils import data_util
 
@@ -79,3 +82,28 @@ class ICollector:
 
     def process_file(self, file: Path) -> List[Dict]:
         raise NotImplemented()
+
+
+class GenericJsonCollector(ICollector):
+    def process_file(self, file: Path) -> List[Dict]:
+        try:
+            data = json.loads(file.read_text())
+        except Exception as e:
+            logger.error(f"Could not parse profiler {e}")
+            return []
+
+        reports = unwind_report(data)
+        run_reports = list()
+
+        for report in reports:
+            timer_report = dict(
+                index=self.extras.copy(),
+                system=self.system,
+                problem=report["problem"],
+                result=report["timer"],
+            )
+            timer_report['index']['frame'] = timer_report['result']['name']
+            run_reports.append(timer_report)
+
+        return run_reports
+

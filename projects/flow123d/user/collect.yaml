@@ -4,7 +4,7 @@ filess: <workdir()>/.cihpc/.tmp/<uuid>/**/profiler_info*.json
 # when done processing, optionally detele
 delete-after: False
 # module which is used as a parser
-module: cihpc.artifacts.modules.flow123d_profiler_module
+module: flow123d
 
 # extra fields, which will be added to the report as an index
 extra:
@@ -18,9 +18,8 @@ extra:
   mesh:       < mesh >
   cpus:       < cpus >
 
-  frame:      whole-program
+  frame:      null
   uuid:       < uuid >
-
   host:       < hostname >
 
   mesh_cpus:  << int(mesh.split("_")[0]) >>

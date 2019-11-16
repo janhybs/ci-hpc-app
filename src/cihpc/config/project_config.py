@@ -41,6 +41,25 @@ class ProjectConfig:
         os.chdir(str(self.workdir))
         context = {**self.context, **(context or {})}
 
+        # setup git
+        self._setup_git(context)
+        self._run_jobs(context)
+
+    def _run_jobs(self, context):
+        for job in self.jobs:
+            for sub_job, extra_context, variation in job.expand(context):
+                rest = dict(uuid=string_util.uuid())
+                new_context = {**extra_context, **variation, **rest}
+                sub_job.construct(new_context)
+
+                try:
+                    sub_job.execute(new_context)
+                except JobError as e:
+                    logger.error("JobError: terminating workflow...")
+
+            job.try_delete_after()
+
+    def _setup_git(self, context):
         if self.git.main_repo:
             logger.info(f"Setting up main repository {self.git.main_repo.name}")
             # TODO: set branch/commit
@@ -53,14 +72,3 @@ class ProjectConfig:
             if repo:
                 logger.info(f"Setting up secondary repository {repo.name}")
                 repo.initialize()
-
-        for job in self.jobs:
-            for sub_job, extra_context, variation in job.expand(context):
-                rest = dict(uuid=string_util.uuid())
-                new_context = {**extra_context, **variation, **rest}
-                sub_job.construct(new_context)
-
-                try:
-                    sub_job.execute(new_context)
-                except JobError as e:
-                    logger.error("JobError: terminating workflow...")

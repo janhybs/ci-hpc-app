@@ -1,0 +1,21 @@
+name: bench-stat
+before-run: |
+  pwd
+
+git: https://github.com/janhybs/bench-stat.git
+
+steps:
+  - name: compile
+    runs: |
+      cd bench-stat
+      make -C benchmarks compile
+      ldd benchmarks/O3.out
+
+    cache: [bench-stat]
+
+    # if: < get_output("flow123d/bin/flow123d --version").find(git.commit_short) != -1 >
+  - name: test
+    variables: !readyaml user/variables.yaml
+    runs: !readfile  user/run.sh
+    collect: !readyaml user/collect.yaml
+    clean-after: true

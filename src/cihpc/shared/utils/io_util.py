@@ -39,6 +39,8 @@ class StreamableSpecial(IStreamable):
         if self.target in (0, subprocess.DEVNULL, "devnull", False):
             self.fp = subprocess.DEVNULL
 
+        return self.fp
+
     def close(self):
         pass
 
