@@ -1,36 +1,31 @@
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Union
 
 from loguru import logger
 from git import Repo
 import os
 import shutil
 
-from overload import overload
-
 
 class ProjectConfigGit:
-    @overload
-    def __init__(self, data: Dict):
-        self.main_repo = self._from_dict(**data)
+    def __init__(self, data: Union[Dict, List, str]):
         self.deps: Dict[str, GitSpec] = dict()
 
-    @__init__.add
-    def __init__(self, data: str):
-        self.main_repo = GitSpec(url=data)
-        self.deps: Dict[str, GitSpec] = dict()
+        if isinstance(data, Dict):
+            self.main_repo = self._from_dict(**data)
 
-    @__init__.add
-    def construct(self, data: List):
-        main = dict(url=data[0]) if isinstance(data[0], str) else data[0]
-        self.main_repo = self._from_dict(**main)
-        self.deps: Dict[str, GitSpec] = dict()
+        elif isinstance(data, List):
+            main = dict(url=data[0]) if isinstance(data[0], str) else data[0]
+            self.main_repo = self._from_dict(**main)
+            for dep in data[1:]:
+                dep = dict(url=dep) if isinstance(dep, str) else dep
+                repo = self._from_dict(**dep)
+                self.deps[repo.name] = repo
 
-        for dep in data[1:]:
-            dep = dict(url=dep) if isinstance(dep, str) else dep
-            repo = self._from_dict(**dep)
-            self.deps[repo.name] = repo
+        elif isinstance(data, str):
+            self.main_repo = GitSpec(url=data)
+            self.deps: Dict[str, GitSpec] = dict()
 
     @classmethod
     def _from_dict(cls, **kwargs) -> 'GitSpec':

@@ -4,9 +4,11 @@ from cihpc.config import read_cfg
 from cihpc.parsers.main import parse_worker_args
 from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.g import G
+import os
 
 
 def test():
+    print(__file__)
     _current_dir = Path(__file__).absolute().parent
     args = parse_worker_args(["--cfg", str(_current_dir)])
 
