@@ -4,3 +4,4 @@ loguru
 gitpython
 psutil
 pymongo
+pyyaml
