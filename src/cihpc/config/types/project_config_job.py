@@ -134,7 +134,11 @@ class ProjectConfigJob:
             index = configure_recursive(yaml.load(_default_job_index), context)["index"]
 
         document = self._create_indef_info(index, returncode)
-        Mongo().col_index_info.insert(document)
+
+        try:
+            Mongo().col_index_info.insert(document)
+        except Exception as e:
+            logger.error(f"Could not save info to db: {e}")
 
     @staticmethod
     def _create_indef_info(index, returncode):

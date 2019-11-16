@@ -54,8 +54,11 @@ class G:
     @classmethod
     def get_secret(cls, project_name: str) -> Dict:
         if not cls._cfg_secret_yaml:
-            import yaml
-            cls._cfg_secret_yaml = yaml.safe_load(pathlib.Path(cls.cfg_secret_path).read_text())
+            if pathlib.Path(cls.cfg_secret_path).exists():
+                import yaml
+                cls._cfg_secret_yaml = yaml.safe_load(pathlib.Path(cls.cfg_secret_path).read_text())
+            else:
+                cls._cfg_secret_yaml = dict()
 
         return cls._cfg_secret_yaml.get(project_name)
 
