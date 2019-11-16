@@ -1,0 +1,6 @@
+/.tmp
+/cfg/.secret.yaml
+.secret*
+.idea
+.vs
+__pycache__
