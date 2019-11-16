@@ -6,11 +6,9 @@ from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.g import G
 
 
-__dir__ = Path(__file__).parent.absolute()
-
-
 def test():
-    args = parse_worker_args(["--cfg", str(__dir__)])
+    _current_dir = Path(__file__).absolute().parent
+    args = parse_worker_args(["--cfg", str(_current_dir)])
 
     # read yaml
     G.init(args)
