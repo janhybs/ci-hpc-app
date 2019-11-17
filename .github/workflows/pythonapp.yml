@@ -34,7 +34,7 @@ jobs:
      
     - name: Test with pytest
       run: |
-        py.test --cov=cihpc tests/integration/example-01/example_01.py
+        py.test --cov=cihpc tests
         
     - name: Coveralls
       run: |
