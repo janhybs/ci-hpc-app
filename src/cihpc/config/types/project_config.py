@@ -7,13 +7,16 @@ from loguru import logger
 from cihpc.config.configure import configure
 from cihpc.config.types.project_config_git import ProjectConfigGit
 from cihpc.config.types.project_config_job import ProjectConfigJob
-from cihpc.shared.errors.job_error import JobError
-from cihpc.shared.utils import string_util
+from cihpc.parsers.common_parser import CommonParser
+from cihpc.shared.db.db_stats import DBStats
+from cihpc.shared.errors.custom_errors import JobError, ProjectError
+from cihpc.shared.g import G
+from cihpc.shared.utils import string_util, job_util
 from cihpc.shared.utils.data_util import first_valid
 
 
 class ProjectConfig:
-    def __init__(self, data: Dict):
+    def __init__(self, data: Dict, args: CommonParser):
         self.name: str = data["name"]
 
         self.workdir: Path = Path(configure(data.get("workdir", f'<workdir()>/{self.name}')))
@@ -23,6 +26,7 @@ class ProjectConfig:
         self.after_run: str = first_valid(data, "after-shell", "after-run")
 
         self.git = ProjectConfigGit(data["git"])
+
         self.context = dict(
             name=self.name,
             workdir=self.workdir,
@@ -33,8 +37,24 @@ class ProjectConfig:
         for index, job in enumerate(first_valid(data, "steps", "pipeline") or []):
             self.jobs.append(ProjectConfigJob(job, self, index))
 
+        # args override
+        self.set_desired_head(args.commit, args.branch)
+        self.desired_variables: Dict[str, List] = dict()
+        for job, var in args.variable_file.items():
+            self.set_desired_variables(job, var)
+
     def __repr__(self):
         return f"<ProjectConfig({self.workdir})>"
+
+    def set_desired_head(self, commit, branch):
+        if self.git.main_repo:
+            self.git.main_repo.set_desired_head(
+                commit=commit,
+                branch=branch
+            )
+
+    def set_desired_variables(self, job_name: str, variables: List):
+        self.desired_variables[job_name] = variables
 
     def execute(self, context=None):
         self.workdir.mkdir(parents=True, exist_ok=True)
@@ -43,19 +63,40 @@ class ProjectConfig:
 
         # setup git
         self._setup_git(context)
-        self._run_jobs(context)
+        try:
+            self._run_jobs(context)
+        except ProjectError as e:
+            logger.error(f"Error: {e}")
 
     def _run_jobs(self, context):
         for job in self.jobs:
+
+            if job.name in self.desired_variables:
+                job.variables.set_variables(
+                    self.desired_variables[job.name]
+                )
+
             for sub_job, extra_context, variation in job.expand(context):
-                rest = dict(uuid=string_util.uuid())
+                rest = dict(uuid=string_util.uuid(), job=sub_job)
                 new_context = {**extra_context, **variation, **rest}
                 sub_job.construct(new_context)
+
+                lookup_index = job_util.get_index(sub_job, new_context)
+                ok_count, broken_count = DBStats.get_run_count(lookup_index)
+                logger.info(f"Found {ok_count} successful and {broken_count} failed builds for the job {sub_job}")
+
+                if broken_count >= sub_job.retries:
+                    logger.warning(f"Skipping job '{sub_job}' since it already has {broken_count} broken builds")
+                    if sub_job.continue_on_error:
+                        continue
+                    else:
+                        raise ProjectError("Skipping build since broken count has reached its limit")
 
                 try:
                     sub_job.execute(new_context)
                 except JobError as e:
                     logger.error("JobError: terminating workflow...")
+                    raise ProjectError(f"Terminating build since job {sub_job} failed")
 
             job.try_delete_after()
 

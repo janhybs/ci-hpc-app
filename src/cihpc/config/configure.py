@@ -1,3 +1,4 @@
+import enum
 import re
 import sys
 import os
@@ -10,6 +11,12 @@ from cihpc.shared.g import G
 
 _configure_object_regex = re.compile(r'<([a-zA-Z0-9_ .()\[\]{\}\-+*/\'"]+)>')
 _hostname = platform.node()
+
+
+class Missing(enum.Enum):
+    KEEP_ORIGINAL = 1
+    RAISE_ERROR = 2
+    NONE = 3
 
 
 class _EnvGetter:
@@ -36,7 +43,7 @@ _global_context = dict(
 )
 
 
-def configure(template: str, context: Dict=None, keep_missing=True):
+def configure(template: str, context: Dict=None, keep_missing: Missing = Missing.KEEP_ORIGINAL):
     if not template:
         return template
 
@@ -47,9 +54,12 @@ def configure(template: str, context: Dict=None, keep_missing=True):
         try:
             return str(eval(subject, context, _global_context))
         except NameError:
-            if keep_missing:
+            if keep_missing is Missing.KEEP_ORIGINAL:
                 return match.group(0)
-            raise
+            elif keep_missing is Missing.NONE:
+                return 'null'
+            else:
+                raise
 
     template = str(template)
 
@@ -65,14 +75,17 @@ def configure(template: str, context: Dict=None, keep_missing=True):
         try:
             return eval(template[1:-1], context, _global_context)
         except NameError:
-            if keep_missing:
+            if keep_missing is Missing.KEEP_ORIGINAL:
                 return template
-            raise
+            elif keep_missing is Missing.NONE:
+                return None
+            else:
+                raise
 
     return _configure_object_regex.sub(_replace, str(template))
 
 
-def configure_recursive(o: Union[Iterable, Dict, str], context: Dict=None, keep_missing=True):
+def configure_recursive(o: Union[Iterable, Dict, str], context: Dict=None, keep_missing: Missing = Missing.KEEP_ORIGINAL):
     if not o:
         return o
 

@@ -6,6 +6,7 @@ git: https://github.com/janhybs/bench-stat.git
 
 steps:
   - name: compile
+    retry: 3
     runs: |
       cd bench-stat
       make -C benchmarks compile

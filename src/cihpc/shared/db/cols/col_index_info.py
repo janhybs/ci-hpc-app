@@ -13,15 +13,17 @@ from cihpc.shared.db.models import (
 
 
 class IndexInfoRun(Entity):
-    is_broken: Optional[bool]
-    timestamp: Optional[float]
+    duration: Optional[float]
     returncode: Optional[int]
 
     def __init__(self, **kwargs):
-        self.timestamp = float(kwargs.pop('timestamp', time.time()))
-        self.is_broken = None
+        self.duration = None
         self.returncode = None
         super().__init__(**kwargs)
+
+    @property
+    def is_broken(self):
+        return self.returncode != 0
 
 
 class ColIndexInfo(IdEntity):

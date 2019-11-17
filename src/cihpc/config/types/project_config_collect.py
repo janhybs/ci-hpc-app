@@ -34,11 +34,12 @@ class ProjectConfigCollect:
         return self.enabled
 
     def execute(self, context: Dict):
+        logger.info(f"Collecting artifacts...")
         extra = configure_recursive(self.extra, context)
 
         files = list()
         for file in self.files:
-            path = Path(configure(file, context, False)).absolute()
+            path = Path(configure(file, context)).absolute()
             files.extend(glob.glob(str(path), recursive=True))
 
         collector_type = _collectors[self.module]

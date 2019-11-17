@@ -18,8 +18,12 @@ class ProjectConfigVariables:
 
     def __init__(self, data: List[Dict[str, List[Dict[str, List]]]]):
         self.variations: List[Dict[str, Any]] = list()
+        self.set_variables(data)
 
-        for section in data:
+    def set_variables(self, new_variables: List[Dict[str, List[Dict[str, List]]]]):
+        self.variations: List[Dict[str, Any]] = list()
+
+        for section in new_variables:
             section_type = self.first(section.keys())
             section_data = self.first(section.values())
 
@@ -36,6 +40,9 @@ class ProjectConfigVariables:
         total = len(self.variations)
         for index, variation in enumerate(self.variations):
             yield dict(total=total, index=index, **variation)
+
+    def __len__(self):
+        return len(self.variations)
 
     def __call__(self, *args, **kwargs):
         return self.loop()

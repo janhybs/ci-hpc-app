@@ -1,5 +1,9 @@
+import json
 import subprocess
-from typing import Optional, TextIO, Union
+from pathlib import Path
+from typing import Optional, TextIO, Union, Any
+
+import yaml
 
 
 class IStreamable:
@@ -56,3 +60,11 @@ def get_streamable(type: Optional[str]) -> IStreamable:
         return StreamableFile(type)
 
     return IStreamable()
+
+
+def read_yaml(path: Union[Path, str]) -> Any:
+    return yaml.safe_load(Path(path).read_text())
+
+
+def read_json(path: Union[Path, str]) -> Any:
+    return json.loads(Path(path).read_text())

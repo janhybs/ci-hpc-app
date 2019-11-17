@@ -6,8 +6,8 @@
     - id: 2
       name: memory-cache-test-l2
       
-    - id: 3
-      name: memory-cache-test-l3
+    # - id: 3
+    #   name: memory-cache-test-l3
 
-    - id: 0
-      name: memory-cache-test-all
+    # - id: 0
+    #   name: memory-cache-test-all

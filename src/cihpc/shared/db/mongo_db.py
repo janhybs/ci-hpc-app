@@ -32,8 +32,12 @@ class MongoCollection:
     def insert_many(self, documents: List[AllColTypes], **kwargs):
         return self._collection.insert_many(documents, **kwargs)
 
+    def aggregate(self, pipeline: List[Dict], **kwargs):
+        return self._collection.aggregate(pipeline, **kwargs)
+
     def __repr__(self):
         return f"<Col({self.name})>"
+
 
 class MongoImpl(object):
     """

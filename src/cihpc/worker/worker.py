@@ -1,4 +1,6 @@
-from cihpc.config import read_cfg
+from loguru import logger
+
+from cihpc.config import get_project_config
 from cihpc.parsers.main import parse_worker_args
 from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.g import G
@@ -8,7 +10,9 @@ if __name__ == '__main__':
 
     # read yaml
     G.init(args)
-    config = read_cfg(args.config_file)
-    Mongo.set_default_project(config.name)
+    logger.info(f"Using workdir: {G.project_work_dir}")
 
-    config.execute()
+    project_config = get_project_config(args)
+    Mongo.set_default_project(project_config.name)
+
+    project_config.execute()

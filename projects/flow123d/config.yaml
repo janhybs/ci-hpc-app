@@ -8,12 +8,12 @@ git:
 
 steps:
   - name: compile
+    retry: 1
     runs: !readfile utils/install.sh
     cache:
       - flow123d/build-<git.branch>
       - build-<git.branch>
 
-    # if: < get_output("flow123d/bin/flow123d --version").find(git.commit_short) != -1 >
   - name: test
     variables: !readyaml user/small-serial-set.yaml
     runs: !readfile  utils/runtest.sh

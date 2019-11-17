@@ -16,6 +16,7 @@ __secret_yaml__ = os.environ.get('CIHPC_SECRET', None) or os.path.join(__cfg__, 
 
 
 class G:
+    BROKEN_COUNT_LIMIT = 2
     tty = getattr(sys.stdout, 'isatty', lambda: False)()
     root = __root__
     src = __src__
