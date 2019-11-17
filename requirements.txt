@@ -5,3 +5,4 @@ gitpython
 psutil
 pymongo
 pyyaml
+colorama

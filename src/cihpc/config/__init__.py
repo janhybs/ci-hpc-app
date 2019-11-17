@@ -1,10 +1,8 @@
 from pathlib import Path
-from typing import Dict
-import re
 
 from cihpc.config import _extensions
 from cihpc.config._cfg import _read_yaml
-from cihpc.config.project_config import ProjectConfig
+from cihpc.config.types.project_config import ProjectConfig
 
 cfg = None
 
