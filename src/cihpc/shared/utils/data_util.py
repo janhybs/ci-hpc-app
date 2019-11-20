@@ -1,4 +1,17 @@
-from typing import List, Dict
+from typing import List, Dict, Iterable
+
+
+def distinct(items: Iterable, sort=True, reverse=True, key=None) -> List:
+    unique_items = list(set(items))
+    if sort:
+        if key:
+            return sorted(unique_items, key=key, reverse=reverse)
+        else:
+            return sorted(unique_items, key=key, reverse=reverse)
+    return unique_items
+
+
+unique = distinct
 
 
 def ensure_list(inst) -> List:
@@ -24,8 +37,8 @@ def flatten(d, parent_key='', sep='-'):
     return dict(items)
 
 
-def first_valid(data: Dict, *names: str):
-    result = None
+def first_valid(data: Dict, *names: str, default=None):
     for name in names:
-        result = result or data.get(name)
-    return result
+        if name in data:
+            return data[name]
+    return default

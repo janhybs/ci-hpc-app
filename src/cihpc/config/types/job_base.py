@@ -8,7 +8,6 @@ from loguru import logger
 
 from cihpc.config.configure import configure
 from cihpc.shared.errors.custom_errors import JobError
-from cihpc.shared.utils import job_util
 from cihpc.shared.utils.data_util import first_valid
 from cihpc.shared.utils.io_util import get_streamable
 from cihpc.shared.utils.string_util import generate_bash
@@ -35,8 +34,8 @@ class JobBase:
         self._variation: str = data.get('_variation', "")
         self.name: str = first_valid(data, "id", "name", "step", "job")
 
-        self.stdout = get_streamable(first_valid(data, "stdout", "output") or subprocess.DEVNULL)
-        self.stderr = get_streamable(first_valid(data, "stderr", "error") or subprocess.STDOUT)
+        self.stdout = get_streamable(first_valid(data, "stdout", "output", default=subprocess.DEVNULL))
+        self.stderr = get_streamable(first_valid(data, "stderr", "error", default=subprocess.STDOUT))
 
         self.on_success: str = data.get("on-success")
         self.on_success_script: Optional[Path] = None

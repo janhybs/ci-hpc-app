@@ -8,7 +8,7 @@ git:
 
 steps:
   - name: compile
-    retry: 1
+    stdout: null
     runs: !readfile utils/install.sh
     cache:
       - flow123d/build-<git.branch>

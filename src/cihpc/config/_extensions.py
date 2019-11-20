@@ -2,7 +2,8 @@
 # author: Jan Hybs
 
 import yaml
-import os
+
+_extended = dict(value=False)
 
 
 def cpu_range(loader, node):
@@ -38,8 +39,10 @@ def read_yaml(loader, node):
 
 
 def extend():
-    yaml.add_constructor('!range', cpu_range, Loader=yaml.SafeLoader)
-    yaml.add_constructor('!repeat', str_repeat, Loader=yaml.SafeLoader)
-    yaml.add_constructor('!readfile', read_file, Loader=yaml.SafeLoader)
-    yaml.add_constructor('!readyaml', read_yaml, Loader=yaml.SafeLoader)
-    yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
+    if not _extended.get("value", False):
+        yaml.add_constructor('!range', cpu_range, Loader=yaml.SafeLoader)
+        yaml.add_constructor('!repeat', str_repeat, Loader=yaml.SafeLoader)
+        yaml.add_constructor('!readfile', read_file, Loader=yaml.SafeLoader)
+        yaml.add_constructor('!readyaml', read_yaml, Loader=yaml.SafeLoader)
+        yaml.add_representer(str, str_presenter, Dumper=yaml.SafeDumper)
+        _extended['value'] = True

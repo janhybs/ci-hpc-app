@@ -6,14 +6,14 @@ from pymongo import MongoClient
 
 from cihpc.shared.db.cols.col_index_info import ColIndexInfo
 from cihpc.shared.db.cols.col_index_stat import ColIndexStat
-from cihpc.shared.db.cols.col_schedule import ColScheduler
+from cihpc.shared.db.cols.col_schedule import ColSchedule
 from cihpc.shared.db.cols.col_timers import ColTimer
 from cihpc.shared.db.models import IdEntity
 from cihpc.shared.errors.config_error import ConfigError
 from cihpc.shared.g import G
 
 
-AllColTypes = Union[IdEntity, ColIndexInfo, ColScheduler, ColTimer]
+AllColTypes = Union[IdEntity, ColIndexInfo, ColSchedule, ColTimer]
 
 
 class MongoCollection:
@@ -78,7 +78,7 @@ class MongoImpl(object):
         )
         self.col_scheduler = MongoCollection(
             self.db.get_collection(self.config_artifacts.get('col_scheduler_name', f'scheduler-{G.version}')),
-            ColScheduler
+            ColSchedule
         )
 
         logger.debug(f'connected: {self}, {self.db.name}:{{{self.col_timers.name}, {self.col_index_info.name}, {self.col_scheduler.name}}}')

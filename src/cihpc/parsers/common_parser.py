@@ -12,7 +12,7 @@ class CommonParser(Tap):
     commit: str = None
     branch: str = "master"
     random_workdir: str = ""
-    variable_file: Dict[str, List] = None
+    variable_file: Dict[str, List] = dict()
 
     @staticmethod
     def _get_config_path(value) -> Path:

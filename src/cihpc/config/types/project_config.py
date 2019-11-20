@@ -31,6 +31,7 @@ class ProjectConfig:
             name=self.name,
             workdir=self.workdir,
             tmpdir=self.tmpdir,
+            git=self.git.main_repo
         )
 
         self.jobs: List[ProjectConfigJob] = list()
@@ -42,6 +43,16 @@ class ProjectConfig:
         self.desired_variables: Dict[str, List] = dict()
         for job, var in args.variable_file.items():
             self.set_desired_variables(job, var)
+
+    def get(self, job_name:str):
+        for job in self.jobs:
+            if job.name == job_name:
+                return job
+
+        return None
+
+    def __getitem__(self, item):
+        return self.get(item)
 
     def __repr__(self):
         return f"<ProjectConfig({self.workdir})>"
@@ -56,26 +67,33 @@ class ProjectConfig:
     def set_desired_variables(self, job_name: str, variables: List):
         self.desired_variables[job_name] = variables
 
-    def execute(self, context=None):
+    def initialize(self, context=None, with_git=True):
+        context = {**self.context, **(context or {})}
         self.workdir.mkdir(parents=True, exist_ok=True)
         os.chdir(str(self.workdir))
-        context = {**self.context, **(context or {})}
 
         # setup git
-        self._setup_git(context)
+        if with_git:
+            self._setup_git(context)
+
+        for job in self.jobs:
+            if job.name in self.desired_variables:
+                job.variables.set_variables(
+                    self.desired_variables[job.name]
+                )
+
+    def execute(self, context=None):
+        self.initialize(context)
+
         try:
             self._run_jobs(context)
         except ProjectError as e:
             logger.error(f"Error: {e}")
 
     def _run_jobs(self, context):
+        context = {**self.context, **(context or {})}
+
         for job in self.jobs:
-
-            if job.name in self.desired_variables:
-                job.variables.set_variables(
-                    self.desired_variables[job.name]
-                )
-
             for sub_job, extra_context, variation in job.expand(context):
                 rest = dict(uuid=string_util.uuid(), job=sub_job)
                 new_context = {**extra_context, **variation, **rest}
@@ -105,9 +123,6 @@ class ProjectConfig:
             logger.info(f"Setting up main repository {self.git.main_repo.name}")
             # TODO: set branch/commit
             self.git.main_repo.initialize()
-            context.update(
-                dict(git=self.git.main_repo)
-            )
 
         for repo_name, repo in self.git.deps.items():
             if repo:

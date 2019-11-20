@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 from loguru import logger
 from git import Repo
@@ -46,7 +46,7 @@ _default_branch = None
 
 class GitSpec:
     """
-    :type repo: Optional[git.Repo]
+    :type repo: Optional[Repo]
     """
 
     clone_reference_cmd = 'git clone --bare'.split()
@@ -58,7 +58,7 @@ class GitSpec:
         self._commit = commit or None
         self.checkout = kwargs.get('checkout', True)
         self.clean_before_checkout = kwargs.get('clean-before-checkout', False)
-        self.repo = None
+        self.repo: Optional[Repo] = None
         self.reference = reference
         self._dir = kwargs.get('dir', None)
 
@@ -68,10 +68,20 @@ class GitSpec:
     def set_fake_head(self, commit=None, branch=None):
         self._fake_commit = commit
         self._fake_branch = branch
+        return self
 
     def set_desired_head(self, commit=_default_commit, branch=_default_branch):
         self._branch = branch
         self._commit = commit
+        return self
+
+    @property
+    def desired_branch(self):
+        return self._branch
+
+    @property
+    def desired_commit(self):
+        return self._commit
 
     @property
     def dir(self):
