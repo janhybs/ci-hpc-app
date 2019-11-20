@@ -1,3 +1,1 @@
-# ci-hpc-app
-
-[![Coveralls github](https://img.shields.io/coveralls/github/janhybs/ci-hpc-app?logo=codeforces&logoColor=white&style=flat-square)](https://coveralls.io/github/janhybs/ci-hpc-app)
+# ci-hpc-app &middot; [![Actions Status](https://github.com/janhybs/ci-hpc-app/workflows/Python%20application/badge.svg)](https://github.com/janhybs/ci-hpc-app/actions) [![Coveralls github](https://img.shields.io/coveralls/github/janhybs/ci-hpc-app?logo=codeforces&logoColor=999&style=flat&labelColor=393939)](https://coveralls.io/github/janhybs/ci-hpc-app)
