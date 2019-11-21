@@ -7,8 +7,9 @@ import os
 
 from cihpc.config.types.project_config import ProjectConfig
 from cihpc.config.types.project_config_git import GitSpec
-from cihpc.shared.db.cols.col_schedule import ColScheduleDetails, ColSchedule
+from cihpc.shared.db.cols.col_schedule import ColScheduleDetails, ColSchedule, ColScheduleStatus
 from cihpc.shared.db.db_stats import DBStats
+from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.db.timer_index import TimerIndex
 from cihpc.shared.utils import job_util, string_util
 from cihpc.shared.utils.data_util import distinct
@@ -52,7 +53,6 @@ class RepoUtil:
             yield branch_commit
 
     def schedule_run(self, commit: str, branch: str, job_name: str = "test"):
-
         self.project_config.git.main_repo.set_fake_head(
             commit=commit,
             branch=branch
@@ -66,10 +66,17 @@ class RepoUtil:
             new_context = {**extra_context, **variation, **rest}
             schedule_index = TimerIndex(**job_util.get_index(job, new_context))
             # TODO specify repetitions
-            schedule_details = ColScheduleDetails(priority=0, repetitions=7)
-            schedule_document = ColSchedule(index=schedule_index, details=schedule_details)
+            schedule_details = ColScheduleDetails(priority=0, repetitions=3)
+            schedule_document = ColSchedule(
+                index=schedule_index,
+                details=schedule_details,
+                status=ColScheduleStatus.NotProcessed,
+                worker=None
+            )
 
             print(DBStats.get_run_count(schedule_index))
+            Mongo().col_scheduler.insert(schedule_document)
+            exit(0)
 
     def schedule_runs(self, branches=None, job_name: str = "test"):
         for branch_commit in self.get_commits(branches):

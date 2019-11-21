@@ -1,4 +1,4 @@
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Any
 
 
 def distinct(items: Iterable, sort=True, reverse=True, key=None) -> List:
@@ -42,3 +42,12 @@ def first_valid(data: Dict, *names: str, default=None):
         if name in data:
             return data[name]
     return default
+
+
+def pop(data: Dict, *names) -> Iterable[Any]:
+    for name in names:
+        yield data.pop(name)
+
+
+def valid(data: Dict) -> Dict[str, Any]:
+    return {k: v for k, v in data.items() if v is not None}

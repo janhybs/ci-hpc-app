@@ -37,10 +37,10 @@ class StreamableFile(IStreamable):
 
 class StreamableSpecial(IStreamable):
     def open(self):
-        if self.target in (1, subprocess.STDOUT, "stdout"):
+        if self.target == "stdout":
             self.fp = subprocess.STDOUT
 
-        if self.target in (0, subprocess.DEVNULL, "devnull", False):
+        if self.target in ("devnull", False):
             self.fp = subprocess.DEVNULL
 
         return self.fp
@@ -50,10 +50,10 @@ class StreamableSpecial(IStreamable):
 
 
 def get_streamable(type: Optional[str]) -> IStreamable:
-    if type in (None, False):
+    if type in (None, True, "console", "terminal"):
         return IStreamable()
 
-    if isinstance(type, int) or type in ("stdout", "devnull", subprocess.DEVNULL, subprocess.STDOUT):
+    if isinstance(type, int) or type in ("stdout", "devnull", False):
         return StreamableSpecial(type)
 
     if isinstance(type, str):

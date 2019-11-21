@@ -8,13 +8,13 @@ git:
 
 steps:
   - name: compile
-    stdout: null
     runs: !readfile utils/install.sh
     cache:
       - flow123d/build-<git.branch>
       - build-<git.branch>
 
   - name: test
+    stdout: true
     variables: !readyaml user/small-serial-set.yaml
     runs: !readfile  utils/runtest.sh
     collect: !readyaml user/collect.yaml

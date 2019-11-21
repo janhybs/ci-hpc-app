@@ -7,10 +7,12 @@ from git import Repo
 import os
 import shutil
 
+from cihpc.shared.utils.git_utils import GitRepo
+
 
 class ProjectConfigGit:
     def __init__(self, data: Union[Dict, List, str]):
-        self.deps: Dict[str, GitSpec] = dict()
+        self.deps: Dict[str, GitRepo] = dict()
 
         if isinstance(data, Dict):
             self.main_repo = self._from_dict(**data)
@@ -25,12 +27,12 @@ class ProjectConfigGit:
 
         elif isinstance(data, str):
             self.main_repo = GitSpec(url=data)
-            self.deps: Dict[str, GitSpec] = dict()
+            self.deps: Dict[str, GitRepo] = dict()
 
     @classmethod
-    def _from_dict(cls, **kwargs) -> 'GitSpec':
-        return GitSpec(
-            kwargs['url'],
+    def _from_dict(cls, **kwargs) -> 'GitRepo':
+        return GitRepo(
+            url=kwargs['url'],
             commit=kwargs.get('commit', _default_commit),
             branch=kwargs.get('branch', _default_branch),
             reference=kwargs.get('reference', False),
@@ -41,7 +43,7 @@ class ProjectConfigGit:
 
 
 _default_commit = None
-_default_branch = None
+_default_branch = "master"
 
 
 class GitSpec:
@@ -115,6 +117,8 @@ class GitSpec:
                 )
 
             self.repo.remote().fetch()
+            self.branches = [branch.name for branch in self.repo.heads]
+            print(f"{self.branches}")
 
             # easy scenario, branch set, commit not
             if self._branch and not self._commit:
@@ -144,7 +148,10 @@ class GitSpec:
             elif self._branch and self._commit:
                 logger.info(f'Checking out {self._commit} under branch {self._branch}')
                 self.repo.git.checkout(self._commit, force=True)
-                self.repo.delete_head(self._branch, force=True)
+                try:
+                    self.repo.delete_head(self._branch, force=True)
+                except:
+                    pass
                 new_branch = self.repo.create_head(self._branch)
                 self.repo.head.reference = new_branch
 

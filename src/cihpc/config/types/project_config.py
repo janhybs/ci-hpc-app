@@ -79,7 +79,7 @@ class ProjectConfig:
         for job in self.jobs:
             if job.name in self.desired_variables:
                 job.variables.set_variables(
-                    self.desired_variables[job.name]
+                    [dict(matrix=self.desired_variables[job.name])]
                 )
 
     def execute(self, context=None):

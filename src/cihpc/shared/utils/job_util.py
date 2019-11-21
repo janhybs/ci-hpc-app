@@ -15,6 +15,7 @@ _default_job_index = dict(
     benchmark='< benchmark >',
     cpus='< cpus >',
     commit='< git.commit >',
+    branch='< git.branch >',
 )
 
 
@@ -50,12 +51,5 @@ def save_index_info(job, context: Dict):
 
     try:
         Mongo().col_index_info.insert(index_info)
-    except Exception as e:
-        logger.error(f"Could not save info to db: {e}")
-
-def get_index_info(job, context):
-    index = get_index(job, context)
-    try:
-        Mongo().col_index_info.find()
     except Exception as e:
         logger.error(f"Could not save info to db: {e}")

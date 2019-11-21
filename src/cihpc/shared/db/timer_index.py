@@ -24,7 +24,7 @@ class TimerIndex(Entity):
     mesh_size: Optional[int]
 
     def __init__(self, **kwargs):
-        self.project = None
+        self.project = kwargs.pop("project", None)
         self.commit = None
         self.branch = None
 

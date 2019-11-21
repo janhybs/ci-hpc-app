@@ -34,8 +34,8 @@ class JobBase:
         self._variation: str = data.get('_variation', "")
         self.name: str = first_valid(data, "id", "name", "step", "job")
 
-        self.stdout = get_streamable(first_valid(data, "stdout", "output", default=subprocess.DEVNULL))
-        self.stderr = get_streamable(first_valid(data, "stderr", "error", default=subprocess.STDOUT))
+        self.stdout = get_streamable(first_valid(data, "stdout", "output", default="devnull"))
+        self.stderr = get_streamable(first_valid(data, "stderr", "error", default="stdout"))
 
         self.on_success: str = data.get("on-success")
         self.on_success_script: Optional[Path] = None

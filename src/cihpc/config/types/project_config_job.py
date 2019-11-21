@@ -9,6 +9,7 @@ from cihpc.config.types.project_config_variables import ProjectConfigVariables
 from cihpc.shared.g import G
 
 from cihpc.shared.utils import job_util
+from cihpc.shared.utils.data_util import first_valid
 
 
 class ProjectConfigJob(JobBase):
@@ -18,7 +19,8 @@ class ProjectConfigJob(JobBase):
         """
         super().__init__(data, project_config, index)
 
-        self.variables = ProjectConfigVariables(data.get('variables', []))
+        self.repetitions = first_valid(data, "repetitions", "reps", default=1)
+        self.variables = ProjectConfigVariables(data.get('variables', []), self.repetitions)
         self.cache = ProjectConfigCache(data.get("cache"))
         self.collect = ProjectConfigCollect(data.get("collect"))
         self.retries: int = data.get("retry") or data.get("retries") or G.BROKEN_COUNT_LIMIT

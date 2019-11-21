@@ -16,20 +16,22 @@ class ProjectConfigVariables:
     def first(iterator):
         return next(iter(iterator))
 
-    def __init__(self, data: List[Dict[str, List[Dict[str, List]]]]):
+    def __init__(self, data: List[Dict[str, List[Dict[str, List]]]], repetitions: int):
         self.variations: List[Dict[str, Any]] = list()
+        self.repetitions = repetitions
         self.set_variables(data)
 
     def set_variables(self, new_variables: List[Dict[str, List[Dict[str, List]]]]):
         self.variations: List[Dict[str, Any]] = list()
 
         for section in new_variables:
-            section_type = self.first(section.keys())
-            section_data = self.first(section.values())
+            section_type: str = self.first(section.keys())
+            section_data: Dict = self.first(section.values())
 
             if section_type == 'matrix':
-                values = [ensure_list(self.first(x.values())) for x in section_data]
-                names = [self.first(x.keys()) for x in section_data]
+                values = [ensure_list(self.first(x.values())) for x in section_data] + [list(range(self.repetitions))]
+                names = [self.first(x.keys()) for x in section_data] + ["reps"]
+
                 product = list(dict(zip(names, x)) for x in itertools.product(*values))
                 self.variations.extend(product)
 
