@@ -6,3 +6,5 @@ psutil
 pymongo
 pyyaml
 colorama
+cachetools
+pygments

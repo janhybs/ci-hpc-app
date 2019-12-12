@@ -41,13 +41,13 @@ if __name__ == '__main__':
         project_config.set_desired_variables(job_name, variable_list)
         project_config.initialize(with_git=False)
 
-        # print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.Running)}")
+        print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.Running)}")
 
         try:
             project_config.execute()
-            # print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.Processed)}")
+            print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.Processed)}")
         except Exception as e:
-            # print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.NotProcessed)}")
+            print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.NotProcessed)}")
             raise e
 
 

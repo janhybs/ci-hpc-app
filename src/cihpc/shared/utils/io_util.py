@@ -43,6 +43,9 @@ class StreamableSpecial(IStreamable):
         if self.target in ("devnull", False):
             self.fp = subprocess.DEVNULL
 
+        if self.target in ("pipe", ):
+            self.fp = subprocess.PIPE
+
         return self.fp
 
     def close(self):
@@ -53,7 +56,7 @@ def get_streamable(type: Optional[str]) -> IStreamable:
     if type in (None, True, "console", "terminal"):
         return IStreamable()
 
-    if isinstance(type, int) or type in ("stdout", "devnull", False):
+    if isinstance(type, int) or type in ("stdout", "devnull",  "pipe", False):
         return StreamableSpecial(type)
 
     if isinstance(type, str):

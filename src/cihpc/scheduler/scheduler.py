@@ -22,4 +22,4 @@ if __name__ == '__main__':
         url=project_config.git.main_repo.url,
         project_config=project_config
     )
-    print(repo)
+    repo.schedule_runs()

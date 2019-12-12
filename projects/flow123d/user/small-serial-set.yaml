@@ -2,7 +2,7 @@
 # total of 1 * 4 * 1 = 4 cases
 - matrix:
   - test:           [ 01_square_regular_grid ]
-  - mesh:           [ 1_15662_el, 2_31498_el, 4_62302_el, 8_124498_el ]
+  - mesh:           [ 1_15662_el, 2_31498_el ] # [ 4_62302_el, 8_124498_el ]
   - cpus:           [1]
   - benchmark:
     - transport.yaml 
