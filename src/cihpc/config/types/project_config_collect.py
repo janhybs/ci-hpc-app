@@ -25,6 +25,7 @@ class ProjectConfigCollect:
         else:
             self.enabled = True
             self.files: List[str] = ensure_list(data.get("files", []))
+            self.dir: List[str] = ensure_list(data.get("dir", []))
             self.delete_after: bool = data.get("delete-after", False)
             self.extra = data.get("extra", {})
             self.module = data.get("module", "generic-json")
@@ -40,7 +41,10 @@ class ProjectConfigCollect:
         files = list()
         for file in self.files:
             path = Path(configure(file, context)).absolute()
-            files.extend(glob.glob(str(path), recursive=True))
+            
+            match = glob.glob(str(path), recursive=True)
+            logger.info(f"searching path {str(path)}, found: {match}")
+            files.extend(match)
 
         collector_type = _collectors[self.module]
         collector = collector_type(context, extra)

@@ -4,3 +4,5 @@ flow123d/bin/flow123d \
     -i <mesh> \
     -o <workdir()>/.cihpc/.tmp/<uuid> \
     bench_data/benchmarks/<test>/<benchmark>
+
+ls -la <workdir()>/.cihpc/.tmp/<uuid>/

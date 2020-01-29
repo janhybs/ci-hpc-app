@@ -1,6 +1,7 @@
 # glob expression by which we find the current profiler file
-files: <workdir()>/.cihpc/.tmp/**/profiler_info*.json
-filess: <workdir()>/.cihpc/.tmp/<uuid>/**/profiler_info*.json
+filess: <workdir()>/.cihpc/.tmp/**/profiler_info*.json
+files: <workdir()>/.cihpc/.tmp/<uuid>/**/profiler_info*.json
+dir: <workdir()>/.cihpc/.tmp/<uuid>/
 # when done processing, optionally detele
 delete-after: False
 # module which is used as a parser

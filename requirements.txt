@@ -6,3 +6,4 @@ psutil
 pymongo
 pyyaml
 colorama
+maya
