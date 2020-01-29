@@ -1,5 +1,9 @@
+import json
 from typing import Dict, List, Tuple
 
+from loguru import logger
+
+from cihpc.shared.db.cols.col_schedule import ColScheduleStatus
 from cihpc.shared.db.mongo_db import Mongo
 
 
@@ -12,6 +16,7 @@ class DBStats:
         try:
             return func(Mongo())
         except Exception as e:
+            logger.warning(f"Mongo command failed: {e}")
             return default
 
     @classmethod
@@ -21,7 +26,9 @@ class DBStats:
 
     @classmethod
     def get_run_count(cls, index: Dict) -> Tuple[int, int]:
-        info = cls.get_index_info(index)
+        index_copy = index.copy()
+        index_copy["branch"] = None
+        info = cls.get_index_info(index_copy)
         return info.count(0), len(info) - info.count(0)
 
     @classmethod
@@ -50,6 +57,29 @@ class DBStats:
             return item.get("returncode")
 
         return []
+
+    @classmethod
+    def get_schedule_repetitions(cls, index: Dict, status=ColScheduleStatus.NotProcessed) -> int:
+        match = dict()
+        for k, v in index.items():
+            if v is not None and k != "branch":
+                match[f"index.{k}"] = v
+
+        match["status"] = status
+
+        pipeline = [
+            {"$match": match},
+            {"$group": {
+             "_id": None,
+             "repetitions": {"$sum": "$details.repetitions"},
+            }}
+        ]
+        # print(f"{json.dumps(pipeline, indent=4)}")
+        result = cls._try_execute(lambda mongo: mongo.col_scheduler.aggregate(pipeline), [dict(repetitions=0)])
+        for item in result:
+            return item.get("repetitions")
+
+        return 0
 
         #
         # return self.mongo.col_index_info.find(

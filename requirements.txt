@@ -7,3 +7,5 @@ pymongo
 pyyaml
 colorama
 maya
+cachetools
+pygments

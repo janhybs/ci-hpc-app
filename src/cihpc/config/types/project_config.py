@@ -101,10 +101,10 @@ class ProjectConfig:
 
                 lookup_index = job_util.get_index(sub_job, new_context)
                 ok_count, broken_count = DBStats.get_run_count(lookup_index)
-                logger.info(f"Found {ok_count} successful and {broken_count} failed builds for the job {sub_job}")
+                logger.info(f"Found {ok_count} successful and {broken_count} failed builds for the job: \n{sub_job.pretty_index}")
 
                 if broken_count >= sub_job.retries:
-                    logger.warning(f"Skipping job '{sub_job}' since it already has {broken_count} broken builds")
+                    logger.warning(f"Skipping job since it already has {broken_count} broken builds: \n{sub_job.pretty_index}")
                     if sub_job.continue_on_error:
                         continue
                     else:
@@ -121,7 +121,6 @@ class ProjectConfig:
     def _setup_git(self, context):
         if self.git.main_repo:
             logger.info(f"Setting up main repository {self.git.main_repo.name}")
-            # TODO: set branch/commit
             self.git.main_repo.initialize()
 
         for repo_name, repo in self.git.deps.items():

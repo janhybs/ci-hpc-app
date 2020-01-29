@@ -9,6 +9,7 @@ steps:
   - name: compile
     stdout: true
     runs: !readfile utils/install.sh
+    output: pipe
     cache:
       - flow123d/build-<git.branch>
       - build-<git.branch>

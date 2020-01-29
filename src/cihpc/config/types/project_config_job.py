@@ -1,14 +1,16 @@
-from typing import Dict
+from typing import Dict, Tuple
 
+import cachetools
 from loguru import logger
 
 from cihpc.config.types.job_base import JobBase
 from cihpc.config.types.project_config_cache import ProjectConfigCache
 from cihpc.config.types.project_config_collect import ProjectConfigCollect
 from cihpc.config.types.project_config_variables import ProjectConfigVariables
+
 from cihpc.shared.g import G
 
-from cihpc.shared.utils import job_util
+from cihpc.shared.utils import job_util, data_util
 from cihpc.shared.utils.data_util import first_valid
 
 
@@ -24,6 +26,44 @@ class ProjectConfigJob(JobBase):
         self.cache = ProjectConfigCache(data.get("cache"))
         self.collect = ProjectConfigCollect(data.get("collect"))
         self.retries: int = data.get("retry") or data.get("retries") or G.BROKEN_COUNT_LIMIT
+
+    @property
+    def default_index(self) -> Dict:
+        try:
+            from cihpc.shared.db.timer_index import TimerIndex
+            index = TimerIndex(**job_util.get_index(
+                self,
+                {'job': self, **self.project_config.context}
+            ))
+            index["branch"] = None
+            return index
+        except:
+            return dict()
+
+    @property
+    def pretty_index(self) -> str:
+        import json
+        return json.dumps(data_util.valid(self.default_index))
+
+    @property
+    @cachetools.cached(cache=cachetools.TTLCache(512, 10))
+    def db_run_count(self) -> Tuple[int, int]:
+        try:
+            from cihpc.shared.db.db_stats import DBStats
+            from cihpc.shared.db.timer_index import TimerIndex
+            # print(f"loading {self.name} {self.project_config.git.main_repo.commit}")
+            ok_count, broken_count = DBStats.get_run_count(self.default_index)
+        except Exception as e:
+            logger.warning(f"Failed to get run info for the job {self}: {e}")
+            ok_count, broken_count = 0, 0
+
+        return ok_count, broken_count
+
+    def db_broken_count(self):
+        return self.db_run_count[1]
+
+    def db_ok_count(self):
+        return self.db_run_count[0]
 
     def execute(self, context: Dict):
         logger.info(f"executing job {self.fullname}")
@@ -68,7 +108,7 @@ class ProjectConfigJob(JobBase):
 
     def expand(self, context: Dict):
         if len(self.variables) > 1:
-            logger.info(f"Expanding job {self} to {len(self.variables)} jobs")
+            logger.debug(f"Expanding job to {len(self.variables)} jobs: {self.pretty_index}")
 
         for variation in self.variables.loop():
             new_data = self.data.copy()
@@ -80,3 +120,11 @@ class ProjectConfigJob(JobBase):
             job = ProjectConfigJob(new_data, self.project_config, self.index)
             job.construct({**context, **variation})
             yield job, context, variation
+
+    def __hash__(self):
+        try:
+            value = hash(f"{self.name}-{self.project_config.git.main_repo.commit}")
+            return value
+        except:
+            return super().__hash__(self)
+

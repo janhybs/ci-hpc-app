@@ -11,6 +11,7 @@ from cihpc.shared.errors.custom_errors import JobError
 from cihpc.shared.utils.data_util import first_valid
 from cihpc.shared.utils.io_util import get_streamable
 from cihpc.shared.utils.string_util import generate_bash
+from cihpc.worker.plugins.progress_report import ProgressReport
 
 
 class JobBase:
@@ -67,6 +68,11 @@ class JobBase:
 
             # save pid
             pid = self._process.pid
+            progress = None
+
+            if stdout == subprocess.PIPE:
+                progress = ProgressReport(self._process, lambda x: logger.info(f"Compilation: {x:3d}%"))
+                progress.start()
 
             try:
                 self._process.wait(self.timeout)
@@ -78,6 +84,10 @@ class JobBase:
                 parent.kill()
                 self._process.wait()
                 logger.error(f"{pid} terminated ({self._process.returncode})")
+
+        if progress:
+            progress.stop()
+            progress.join(5.0)
 
         self._endtime = time.time()
         self._handle_process_over(context)

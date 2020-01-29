@@ -28,6 +28,7 @@ EOF
 
 make update-build-tree
 make -j8
+
 bin/flow123d --version
 
 VERSION=$(bin/flow123d --version 2>&1)
