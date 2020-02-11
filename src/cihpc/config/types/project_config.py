@@ -35,6 +35,7 @@ class ProjectConfig:
         )
 
         self.jobs: List[ProjectConfigJob] = list()
+        self.jobs_queue: List[ProjectConfigJob] = list()
         for index, job in enumerate(first_valid(data, "steps", "pipeline") or []):
             self.jobs.append(ProjectConfigJob(job, self, index))
 
@@ -43,6 +44,17 @@ class ProjectConfig:
         self.desired_variables: Dict[str, List] = dict()
         for job, var in args.variable_file.items():
             self.set_desired_variables(job, var)
+        
+        if args.sections:
+            for section in args.sections:
+                jobs = [j for j in self.jobs if j.name == section]
+                if jobs:
+                    self.jobs_queue.append(jobs[0])
+                else:
+                    logger.error(f"Could not find job with name '{section}'")
+        else:
+            self.jobs_queue = self.jobs.copy()
+
 
     def get(self, job_name:str):
         for job in self.jobs:
@@ -89,12 +101,23 @@ class ProjectConfig:
             self._run_jobs(context)
         except ProjectError as e:
             logger.error(f"Error: {e}")
+            exit(1)
 
     def _run_jobs(self, context):
         context = {**self.context, **(context or {})}
 
-        for job in self.jobs:
-            for sub_job, extra_context, variation in job.expand(context):
+        jobs = list(self.jobs_queue)
+        jobs_total = len(jobs)
+
+        for i, job in enumerate(jobs):
+            logger.info(f"section {i+1}/{jobs_total} {job.name}")
+            subjobs = list(job.expand(context))
+            subjobs_total = len(subjobs)
+
+            for j, (sub_job, extra_context, variation) in enumerate(subjobs):
+                if subjobs_total > 1:
+                    logger.info(f"configuration {j+1}/{subjobs_total} {sub_job}")
+                
                 rest = dict(uuid=string_util.uuid(), job=sub_job)
                 new_context = {**extra_context, **variation, **rest}
                 sub_job.construct(new_context)

@@ -4,9 +4,7 @@ cd flow123d
 ls -la
 
 git checkout -- src/mesh/mesh.cc
-patch \
-    /auto/liberec3-tul/home/jan-hybs/ci-hpc/.tmp/flow123d/flow123d/src/mesh/mesh.cc \
-    /storage/liberec3-tul/home/jan-hybs/ci-hpc/projects/flow123d/utils/mesh.patch || true
+python3 /storage/liberec3-tul/home/jan-hybs/ci-hpc/projects/flow123d/patches/patch.py
 
 
 cat <<EOF > config.cmake
@@ -27,7 +25,7 @@ set(PugiXml_ROOT_HINT       \${PACKAGE_DIR}/pugixml-1.9.0)
 EOF
 
 make update-build-tree
-make -j8
+make -j12
 
 bin/flow123d --version
 

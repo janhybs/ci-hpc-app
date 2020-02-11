@@ -13,6 +13,7 @@ class CommonParser(Tap):
     branch: str = "master"
     random_workdir: str = ""
     variable_file: Dict[str, List] = dict()
+    sections: List[str] = list()
 
     @staticmethod
     def _get_config_path(value) -> Path:
@@ -42,3 +43,4 @@ class CommonParser(Tap):
         self.add_argument("-c", "--config-file", "--config", "--cfg", type=self._get_config_path)
         self.add_argument("--random-workdir", "--rnd")
         self.add_argument("--variable-file", "--var", "--vars", type=self._parse_variables)
+        self.add_argument("sections", nargs="*", type=str)

@@ -8,7 +8,7 @@ if sys.version_info < MIN_PYTHON:
 from loguru import logger
 
 from cihpc.config import get_project_config
-from cihpc.parsers.main import parse_worker_args
+from cihpc.parsers.main import parse_scheduler_args
 from cihpc.shared.db.cols.col_schedule import ColScheduleStatus
 from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.db.timer_index import TimerIndex
@@ -16,7 +16,7 @@ from cihpc.shared.g import G
 from cihpc.shared.utils import data_util, data_util
 
 if __name__ == '__main__':
-    args = parse_worker_args()
+    args = parse_scheduler_args()
 
     # read yaml
     G.init(args)

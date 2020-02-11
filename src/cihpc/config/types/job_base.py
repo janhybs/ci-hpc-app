@@ -71,7 +71,8 @@ class JobBase:
             progress = None
 
             if stdout == subprocess.PIPE:
-                progress = ProgressReport(self._process, lambda x: logger.info(f"Compilation: {x:3d}%"))
+                logger.info("Output from the job will be filtered")
+                progress = ProgressReport(self._process)
                 progress.start()
 
             try:
