@@ -1,0 +1,117 @@
+$statuses: (
+  answer-correct: #b5ffb5,
+  ok: #efd3ff,
+  running: #faf6c6,
+  unknown: #e2b3b3,
+  answer-wrong: #f5d0d0,
+  answer-wrong-timeout: #f5d0d0,
+  global-timeout: #f5d0d0,
+  error-while-running: #f5d0d0,
+  compilation-failed : #f5d0d0,
+);
+
+.ReactTable {
+  .rt-tbody .rt-td {
+    font-size: .8rem;
+    font-weight: 400;
+  }
+
+  a.rt-tr {
+    color: black;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+  
+  &.condensed {
+    .rt-tbody .rt-td {
+      font-size: .7rem;
+      font-weight: 300;
+    }
+  }
+
+  &.tight {
+    .rt-tbody .rt-td {
+      font-size: .6rem;
+      font-weight: 400;
+      
+    }
+  }
+}
+
+.ReactTable {
+  &.summary {
+    .rt-td {
+      padding: 3px;
+    }
+  }
+  .rt-tr {
+    @each $status, $color in $statuses {
+      &.status-#{$status} {
+        background: $color;
+
+        &:hover {
+          background: darken($color, 10) !important;
+        }
+      }
+    }
+  }
+  
+  .rt-td {
+    @each $status, $color in $statuses {
+      &.status-#{$status} {
+        background: $color;
+
+        &:hover {
+          background: darken($color, 10) !important;
+        }
+      }
+    }
+  }
+
+  .rt-tbody .rt-td {
+    text-align: center;
+
+    &.selected {
+      // background: repeating-linear-gradient(
+      //     -55deg,
+      //     rgba(0, 100, 100, 0.1) 0,
+      //     rgba(0, 100, 100, 0.1) 2px,
+      //     rgba(0, 255, 255, 0.1) 4px,
+      //     rgba(0, 255, 255, 0.1) 6px
+      //   );
+      box-shadow: inset 0px 0px 5px 0px #17a2b8;
+    }
+  }
+}
+
+.text-align-left {
+  text-align: left !important;
+}
+
+
+.container.wide {
+  max-width: calc( 100% - 30px );
+}
+
+.cell.cell-points {
+  > div {
+    font-weight: 500;
+    line-height: 0.3rem;
+    font-size: 0.8rem;
+    display: inline;
+    padding-right: 5px;
+  }
+  > small {
+    font-size: 0.6rem;
+    padding: 0;
+    line-height: 0.6rem;
+  }
+}
+
+.modal-backdrop.on-top {
+  z-index: 1050;
+}
+.modal.on-top {
+  z-index: 1051;
+}

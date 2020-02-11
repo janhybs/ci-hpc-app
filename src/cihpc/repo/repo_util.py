@@ -98,7 +98,7 @@ class RepoUtil:
             ok_count, broken_count = DBStats.get_run_count(schedule_index)
 
             # TODO specify repetitions
-            schedule_details = ColScheduleDetails(priority=0, repetitions=3)
+            schedule_details = ColScheduleDetails(priority=0, repetitions=7)
             schedule_document = ColSchedule(
                 index=schedule_index,
                 details=schedule_details,
