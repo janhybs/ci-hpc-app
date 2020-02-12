@@ -1,0 +1,22 @@
+dd {
+    display: block;
+    margin-left: 10px;
+}
+
+dl {
+    margin-bottom: 0;
+
+    &.boxplot {
+        font-size: 87.5%;
+        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+}
+
+.number {
+    font-size: 87.5%;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.highcharts-label {
+     pointer-events: all !important;
+}

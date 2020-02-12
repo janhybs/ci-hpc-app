@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using NumSharp;
 
 namespace CC.Net.Collections
@@ -8,6 +9,8 @@ namespace CC.Net.Collections
     {
         public string Commit { get; set; }
         public string Branch { get; set; }
+        
+        [JsonIgnore]
         public double[] Durations { get; set; }
 
         public double Median

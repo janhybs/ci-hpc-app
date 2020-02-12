@@ -7,16 +7,22 @@ import { SchedulerList } from './routes/SchedulerList';
 import { BenchmarkView } from './routes/BenchmarkView';
 
 
+import {NotificationContainer} from 'react-notifications';
+
+
 export default class App extends Component {
   static displayName = App.name;
 
   render () {
     return (
-      <Layout>
-        <Route exact path='/' component={Home} />
-        <Route path='/scheduler' exact={true} component={SchedulerList} />
-        <Route path='/benchmarks' exact={true} component={BenchmarkView} />
-      </Layout>
+      <>
+        <Layout>
+          <Route exact path='/' component={Home} />
+          <Route path='/scheduler' exact={true} component={SchedulerList} />
+          <Route path='/benchmarks' exact={true} component={BenchmarkView} />
+        </Layout>
+        <NotificationContainer />
+      </>
     );
   }
 }

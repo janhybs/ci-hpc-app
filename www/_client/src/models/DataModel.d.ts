@@ -59,8 +59,14 @@
 		objectId?: string;
 	}
 	export interface ISimpleTimers {
+		branch?: string;
 		commit?: string;
-		items?: ISimpleTimer[];
+		durations?: number[];
+		high?: number;
+		low?: number;
+		median?: number;
+		q1?: number;
+		q3?: number;
 	}
 	export interface IObjectId {
 		creationTime?: Date;

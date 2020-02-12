@@ -1,3 +1,4 @@
+import 'react-notifications/lib/notifications.css';
 
 interface HttpClientConfig {
     baseUrl: string;
