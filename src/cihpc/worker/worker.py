@@ -22,4 +22,7 @@ if __name__ == '__main__':
     project_config = get_project_config(args)
     Mongo.set_default_project(project_config.name)
 
-    project_config.execute()
+    success = project_config.execute()
+
+    if not success:
+        exit(1)

@@ -59,7 +59,7 @@ if __name__ == '__main__':
             print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.Processed)}")
         except Exception as e:
             print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.NotProcessed)}")
-            raise e
+            logger.error(f"Error: {e}")
 
 
 
