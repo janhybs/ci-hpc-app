@@ -1,22 +1,44 @@
-dd {
-    display: block;
-    margin-left: 10px;
+dd,
+dt {
+  display: inline;
+  // margin-left: 10px;
+}
+
+dt::before,
+dd::after {
+  content: " ";
+  display: block;
 }
 
 dl {
-    margin-bottom: 0;
+  display: inline;
+  margin-bottom: 0;
 
-    &.boxplot {
-        font-size: 87.5%;
-        font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
+  &.boxplot {
+    font-size: 87.5%;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
 }
 
 .number {
-    font-size: 87.5%;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 87.5%;
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 .highcharts-label {
-     pointer-events: all !important;
+  pointer-events: all !important;
 }
+
+.chart-wrapper {
+  position: relative;
+  padding: 8px; 
+  
+  
+  .chart-inner {
+    border-radius: 6px;
+    background: #fff;
+    padding: 10px;
+    box-shadow: 0 0 15px #ccc;
+  }
+}
+

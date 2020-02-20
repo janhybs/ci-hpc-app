@@ -5,7 +5,7 @@ import { httpClient } from "../init";
 import { IColScheduler, ISchedulerFilter } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import Moment from 'react-moment';
-import { DropdownButton } from "react-bootstrap";
+import { DropdownButton, Alert } from "react-bootstrap";
 
 const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
 enum ColSchedulerStatus {
@@ -13,6 +13,8 @@ enum ColSchedulerStatus {
     Running = 20,
     Processed = 30
 }
+
+const limitValue = 15;
 
 
 const schedulerStatuses = [
@@ -31,7 +33,7 @@ class SchedulerListModel {
 
     @observable
     public filter: ISchedulerFilter = {
-        limit: 100,
+        limit: 1000,
         status: ColSchedulerStatus.NotProcessed as any,
     }
 }
@@ -86,7 +88,7 @@ export class SchedulerList extends React.Component<{}, SchedulerListState, {}> {
         const items = this.model.items;
         
         return <>
-        <DropdownButton id="dropdown-basic-button" title={this.getStatusName(this.model.filter.status)}>
+        <DropdownButton id="dropdown-basic-button" title={`${this.getStatusName(this.model.filter.status)} [${this.model.items.length}]`}>
             {schedulerStatuses.map(item => 
                 <Dropdown.Item key={item.value} onSelect={i => this.switchStatus(item.value)}>{item.name}</Dropdown.Item>
             )}
@@ -94,8 +96,13 @@ export class SchedulerList extends React.Component<{}, SchedulerListState, {}> {
         <div>
             <ul>
                 {items
-                    .filter(i => i.index != null)
+                    .filter((i, j) => i.index != null && j < limitValue)
                     .map(i => this.renderStatus(i as Required<IColScheduler>))
+                }
+                {items.length > limitValue &&
+                    <Alert variant="warning">
+                        {items.length - limitValue} items are hidden
+                    </Alert>
                 }
             </ul>
         </div>

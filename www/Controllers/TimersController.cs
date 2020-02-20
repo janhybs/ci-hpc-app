@@ -6,6 +6,7 @@ using CC.Net.Collections;
 using CC.Net.Db;
 using CC.Net.Dto;
 using CC.Net.Extensions;
+using CC.Net.Services;
 using CC.Net.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -23,29 +24,32 @@ namespace CC.Net.Controllers
         private readonly ILogger<TimersController> _logger;
         private readonly DbService _dbService;
 
-        public TimersController(ILogger<TimersController> logger, DbService dbService)
+        private readonly GitInfoService _gitInfo;
+
+        public TimersController(ILogger<TimersController> logger, DbService dbService, GitInfoService gitInfo)
         {
             _logger = logger;
             _dbService = dbService;
+            _gitInfo = gitInfo;
         }
 
         [HttpPost]
         [Route("list")]
         public object ActionList(TimersFilter filter)
         {
-            var cmd = @"
-                {'pipeline': [
-                    {
-                        '$match': {
-                            'index.project': '<project>',
-                            'index.test': '<test>',
-                            'index.mesh': '<mesh>',
-                            'index.benchmark': '<benchmark>',
-                            'index.cpus': <cpus>,
-                            'index.frame': 'whole-program'
-                        }
-                    }
-                ]}";
+            // var cmd = @"
+            //     {'pipeline': [
+            //         {
+            //             '$match': {
+            //                 'index.project': '<project>',
+            //                 'index.test': '<test>',
+            //                 'index.mesh': '<mesh>',
+            //                 'index.benchmark': '<benchmark>',
+            //                 'index.cpus': <cpus>,
+            //                 'index.frame': 'whole-program'
+            //             }
+            //         }
+            //     ]}";
             return _dbService.ColTimers
                 .Find(i => 
                     i.Index.Project == filter.info.Project
@@ -69,6 +73,7 @@ namespace CC.Net.Controllers
                     i => i.Commit,
                     (k, i) => new SimpleTimers {
                         Commit = k,
+                        Info = _gitInfo.Get(k),
                         Branch = i.First().Branch,
                         Durations = i.Select(j => j.Duration)
                             .OrderBy(i => i)

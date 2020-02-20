@@ -26,11 +26,17 @@ export class Home extends Component {
 
   render() {
     return (
-      <div>
+      <div className="row">
         {configurations.map((configuration, i) =>
-          <span style={{ float: "left" }}>
-            <BenchmarkView size="small" key={i} configuration={configuration} simple />
-          </span>
+          <div className="chart-wrapper col col-lg-6">
+            <div className="chart-inner">
+              <BenchmarkView
+                size="small" configuration={configuration}
+                simple
+                hideXTicks
+              />
+            </div>
+          </div>
         )}
       </div>
     );

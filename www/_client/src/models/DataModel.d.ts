@@ -61,8 +61,10 @@
 	export interface ISimpleTimers {
 		branch?: string;
 		commit?: string;
+		count?: number;
 		durations?: number[];
 		high?: number;
+		info?: IGitInfo;
 		low?: number;
 		median?: number;
 		q1?: number;
@@ -75,6 +77,11 @@
 		machine?: number;
 		pid?: number;
 		timestamp?: number;
+	}
+	export interface IGitInfo {
+		branch?: string;
+		date?: Date;
+		message?: string;
 	}
 	export interface ISchedulerFilter {
 		limit?: number;

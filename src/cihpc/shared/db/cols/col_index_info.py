@@ -1,8 +1,6 @@
 #!/bin/python3
 # author: Jan Hybs
 
-import time
-from itertools import groupby
 from typing import List, Dict, Optional
 
 from cihpc.shared.db.timer_index import TimerIndex

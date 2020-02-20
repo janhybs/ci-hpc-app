@@ -6,10 +6,12 @@ import { observable } from "mobx"
 import { httpClient } from "../init";
 import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
-import { DropdownButton, Button, ButtonToolbar, ButtonGroup } from "react-bootstrap";
+import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRedo } from '@fortawesome/free-solid-svg-icons'
+import Color from "color"
 
+import moment from "moment";
 import "../styles/chart.css";
 
 // import Highcharts from 'highcharts';
@@ -21,30 +23,49 @@ import addHighchartsMore from 'highcharts/highcharts-more';
 addHighchartsMore(Highcharts);
 
 
+(window as any).Color = Color;
+(window as any).Highcharts = Highcharts;
+const defaultFormat = (i: number) => i.toFixed(2);
 
 
+const noFormat = i => i;
 const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
-const outlierCoef = 0.5;
+const outlierCoef = 0.25;
+const maxCommitByDefault = 30;
 
 interface IOutlier {
     x?: string;
     y?: number;
 }
 
-interface IProp {
-    [key: string]: string
+class Prop {
+    constructor(public key: string, public title?: string, public format = defaultFormat) {
+        this.title = this.title || this.key;
+        this.title = this.title.substr(0, 1).toUpperCase() + this.title.substr(1);
+    }
+    public prop(o: any) {
+        const keys = this.key.split(".");
+        let c = o;
+        keys.forEach(i => c = c[i]);
+        return c;
+    }
 }
 
-const pointFormatter = (xLabels: string[], point: any, ...props: IProp[]) => {
+const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)[]) => {
 
     return `<code>
         <a href="${flow123dCommitUrl}${xLabels[point.x]}" target="_blank">
-            ${xLabels[point.x].substr(0, 8)}
+            ${xLabels[point.x].substr(0, 16)}
         </a>
     </code>
     <dl class="boxplot">
-        ${props.map(p => `<dt>${Object.keys(p)[0]}:</dt><dd>${point[Object.values(p)[0]].toFixed(2)}</dd>`).join("")}
-    <dl>`;
+        ${props.map(p => {
+        const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
+        const value = prop.format(prop.prop(point) || NaN);
+        return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
+    }).join("")
+        }
+    <dl>`
 }
 
 
@@ -94,6 +115,8 @@ class BenchmarkViewModel {
 
 export interface BenchmarkViewProps {
     simple?: boolean;
+    hideTitle?: boolean;
+    hideXTicks?: boolean;
     configuration?: IIndexInfo;
     size?: "big" | "small";
 }
@@ -104,9 +127,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     public model = new BenchmarkViewModel()
 
+    private data: any[] = []
+    private outliers: IOutlier[] = [];
+
     constructor(state) {
         super(state);
-        if(this.props.configuration != null) {
+        if (this.props.configuration != null) {
             this.model.configuration = this.props.configuration
         }
         this.load();
@@ -114,7 +140,18 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     load() {
         httpClient.fetch<ISimpleTimers[]>("timers/list", this.model.filter)
-            .then((data: ISimpleTimers[]) => {
+            .then((json: ISimpleTimers[]) => {
+
+                const sortedData = json.sort((b, a) => {
+                    const dateB = b.info ? new Date(b.info.date as any).getTime() : 0;
+                    const dateA = a.info ? new Date(a.info.date as any).getTime() : 0;
+                    return dateB - dateA;
+                });
+                const { data, outliers } = this.fixData(sortedData);
+
+                this.data = data;
+                this.outliers = outliers
+
                 this.model.items = data;
                 NotificationManager.success('Data loaded', null, 1000);
             });
@@ -153,19 +190,25 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     render() {
         const configurationName = this.configurationName(this.model.configuration);
         const commits = new Map(this.model.items.map((c, i) => [c.commit, i]));
+        const commitInfo = new Map(this.model.items.map(c => [c.commit, c.info]));
         const xLabels = [...commits.keys()] as string[];
+        const { data, outliers } = this;
 
-        const { data, outliers } = this.fixData(this.model.items);
-
+        const isSmall = this.props.size === "small";
+        const boxplotVisible = !isSmall,
+            medianVisible = isSmall,
+            outliersVisible = false,
+            defaultZoom = !isSmall;
 
         return <>
-        {!this.props.simple &&
+            {!this.props.simple &&
                 <ButtonToolbar>
                     <ButtonGroup>
                         <Button variant="dark" onClick={(i) => this.load()}>
                             <FontAwesomeIcon icon={faRedo} />
                         </Button>
-                        <DropdownButton id="dropdown-basic-button" title={configurationName} as={ButtonGroup}>
+                        <DropdownButton id="dropdown-basic-button"
+                            title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
                             {configurations.map(item =>
                                 <Dropdown.Item key={this.configurationName(item)} onSelect={i => this.switchConfig(item)}>
                                     {this.configurationName(item)}
@@ -175,89 +218,155 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     </ButtonGroup>
                 </ButtonToolbar>
             }
-            <div>
-                <HighchartsReact highcharts={Highcharts} options={{
-                    title: {
-                        text: configurationName,
-                    },
-                    chart: {
-                        zoomType: "x",
-                        width: this.props.size == "small" ? 600 : null,
-                    },
-                    yAxis: {
-                        crosshair: {
-                            snap: false,
-                            color: "#00000033",
-                            dashStyle: "LongDash",
-                        }
-                    },
-                    xAxis: {
-                        crosshair: {
-                            snap: false,
-                            color: "#00000033",
-                            dashStyle: "LongDash",
+            {xLabels.length > 0 &&
+                <div>
+                    <HighchartsReact highcharts={Highcharts} options={{
+                        title: {
+                            text: this.props.hideTitle ? "" : configurationName,
                         },
-                        tickInterval: 1,
-                        labels: {
-                            enabled: true,
-                            formatter: function () {
-                                return xLabels[this.value].substr(0, 8);
+                        credits: {
+                            enabled: false
+                        },
+                        legend: {
+                            enabled: !isSmall,
+                        },
+                        chart: {
+                            animation: {
+                                duration: 200,
+                            },
+                            zoomType: "x",
+                            height: isSmall ? null : "700",
+                            events: {
+                                load: function (ev) {
+                                    if (defaultZoom) {
+                                        const chart = this as any;
+                                        chart.xAxis[0].setExtremes(
+                                            chart.series[0].xData.length - maxCommitByDefault,
+                                            chart.series[0].xData.length
+                                        );
+                                        chart.showResetZoom();
+                                    }
+                                },
                             }
-                        }
-                    },
-                    tooltip: {
-                        useHTML: true,
-                    },
-                    series: [
-                        {
-                            type: "line",
-                            name: "Median",
-                            data: data.map(i => i.median as number),
-                            tooltip: {
-                                headerFormat: "",
-                                pointFormatter: function () {
-                                    return pointFormatter(xLabels, this, { "median": "y" });
-                                }
+                        },
+                        yAxis: {
+                            title: {
+                                text: null,
                             },
                         },
-                        {
-                            type: "boxplot",
-                            name: "Boxplot",
-                            color: (Highcharts as any).getOptions().colors[0],
-                            tooltip: {
-                                headerFormat: "",
-                                pointFormatter: function () {
-                                    return pointFormatter(xLabels, this,
-                                        { "Low": "low" },
-                                        { "Q1": "q1" },
-                                        { "Median": "median" },
-                                        { "Q3": "q3" },
-                                        { "High": "high" },
-                                    );
+                        xAxis: {
+                            title: {
+                                text: null,
+                            },
+                            tickInterval: 1,
+                            labels: {
+                                enabled: !this.props.hideXTicks,
+                                formatter: function () {
+                                    try {
+                                        const info = commitInfo.get(xLabels[this.value]);
+
+                                        return !info ? xLabels[this.value].substr(0, 8) :
+                                            `${info.branch} ${moment(info.date as any).fromNow()}`
+                                    } catch (error) {
+                                        return "";
+                                    }
+                                }
+                            }
+                        },
+                        tooltip: {
+                            useHTML: true,
+                            snap: 0,
+                        },
+                        series: [
+                            {
+                                type: "area",
+                                name: "Median",
+                                visible: medianVisible,
+                                stickyTracking: medianVisible,
+                                data: data.map(i => i.median as number),
+                                enableMouseTracking: medianVisible,
+                                lineWidth: 2,
+                                dashStyle: "ShortDot",
+                                marker: {
+                                    enabled: false
+                                },
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
+                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
+                                    ]
+                                },
+                                tooltip: {
+                                    headerFormat: "",
+                                    pointFormatter: function () {
+                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
+                                    }
                                 }
                             },
-                            data: data.map(i => {
-                                return { ...i, x: commits.get(i.commit) };
-                            })
-                        },
-                        {
-                            type: "scatter",
-                            color: (Highcharts as any).getOptions().colors[0],
-                            name: "Outliers",
-                            visible: false,
-                            data: outliers.map(i => {
-                                return { y: i.y, x: commits.get(i.x) };
-                            }),
-                            tooltip: {
-                                headerFormat: "",
-                                pointFormatter: function () {
-                                    return pointFormatter(xLabels, this, { "value": "y" });
-                                }
+                            {
+                                type: "boxplot",
+                                name: "Boxplot",
+                                visible: boxplotVisible,
+                                stickyTracking: false,
+                                color: (Highcharts as any).getOptions().colors[0],
+                                tooltip: {
+                                    headerFormat: "",
+                                    pointFormatter: function () {
+                                        return pointFormatter(xLabels, this,
+                                            new Prop("count", "N", i => i.toFixed()),
+                                            new Prop("info.branch", "Branch", noFormat),
+                                            "count",
+                                            "low",
+                                            "q1",
+                                            "median",
+                                            "q3",
+                                            "high",
+                                        );
+                                    }
+                                },
+                                data: data.map(i => {
+                                    return { ...i, x: commits.get(i.commit) };
+                                })
                             },
-                        },
-                    ]
-                }} />
-            </div>
+                            {
+                                type: "scatter",
+                                name: "Outliers",
+                                visible: outliersVisible,
+                                stickyTracking: false,
+                                color: Color((Highcharts as any).getOptions().colors[0]).darken(0.5).hex(),
+                                data: outliers.map(i => {
+                                    return { y: i.y, x: commits.get(i.x) };
+                                }),
+                                tooltip: {
+                                    headerFormat: "",
+                                    pointFormatter: function () {
+                                        return pointFormatter(xLabels, this, new Prop("y", "Value"));
+                                    }
+                                },
+                            },
+                        ]
+                    }} />
+
+                    {!this.props.simple &&
+                        <div>
+                            <Alert variant="info">
+                                <em>Note</em> If <strong>|max - μ| > ε/μ</strong>, max is marked as an outlier if the chart
+                                in order to simplify the chart, <strong>ε</strong> is currently {outlierCoef * 100}%
+                            </Alert>
+                            <Alert variant="info">
+                                <em>Note</em> By default only the last {maxCommitByDefault} commits are visible,
+                                use <strong>Reset zoom</strong> to view all of the commits
+                            </Alert>
+                        </div>
+                    }
+                </div>
+            }
         </>
     }
 }

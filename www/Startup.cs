@@ -1,5 +1,6 @@
 using CC.Net.Config;
 using CC.Net.Db;
+using CC.Net.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
@@ -29,6 +30,7 @@ namespace CC.Net
             services.AddOptions();
             services.AddSingleton(MongoDBConfig);
             services.AddSingleton(AppOptions);
+            services.AddSingleton(new GitInfoService(AppOptions));
             services.AddScoped<DbService>();
             services.AddControllersWithViews();
 

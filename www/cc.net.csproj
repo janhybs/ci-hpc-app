@@ -12,6 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="3.0.0" />
     <PackageReference Include="NumSharp" Version="0.20.5" />
+    <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
     <PackageReference Include="MongoDB.Bson" Version="2.9.2" />
     <PackageReference Include="MongoDB.Driver" Version="2.9.2" />
     <PackageReference Include="YamlDotNet" Version="8.0.0" />

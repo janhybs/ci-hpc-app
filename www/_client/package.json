@@ -30,6 +30,7 @@
     "@types/reactstrap": "^8.0.6",
     "bootstrap": "^4.3.1",
     "code-prettify": "^0.1.0",
+    "color": "^3.1.2",
     "eslint-plugin-flowtype": "^4.3.0",
     "font-awesome": "^4.7.0",
     "highcharts": "^8.0.0",
@@ -60,10 +61,12 @@
     "react-table": "^6.10.3",
     "reactstrap": "^6.3.0",
     "rimraf": "^2.6.2",
+    "rm": "^0.1.8",
     "throttle-debounce": "^2.1.0",
     "ts-simple-nameof": "^1.2.0"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-optional-chaining": "^7.8.3",
     "ajv": "^6.9.1",
     "cross-env": "^5.2.0",
     "typescript": "^3.6.4"
