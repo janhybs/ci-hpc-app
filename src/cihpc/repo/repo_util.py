@@ -111,7 +111,12 @@ class RepoUtil:
             )
             yield schedule_document, schedule_index
 
+    def to_latest(self):
+        logger.info("pulling latest changes")
+        self.repo.remote().pull()
+
     def extract_info(self, per_branch, max_age, single_branch=None):
+        logger.info("obtaining commit details")
         branches = single_branch if single_branch else get_active_branches(self.repo, max_age)
 
         info: Dict[Commit, List[str]] = defaultdict(list)
@@ -139,6 +144,7 @@ class RepoUtil:
             doc.distance = -1
             documents.append(doc)
 
+        logger.info("comparing changes in db")
         results = Mongo().col_repo_info.find(
             {"commit": in_list([doc.commit for doc in documents])},
             ["commit"],
@@ -147,9 +153,9 @@ class RepoUtil:
 
         existing = [r.commit for r in results]
         filtered = [d for d in documents if d.commit not in existing]
-        logger.info(f"Inspected total of {len(documents)} commits, {len(filtered)} new ones")
+        logger.info(f"inspected total of {len(documents)} commits, {len(filtered)} new ones")
 
         if filtered:
             Mongo().col_repo_info.insert_many(filtered)
         else:
-            logger.info(f"No new commits to inspect...")
+            logger.info(f"no new commits to add...")

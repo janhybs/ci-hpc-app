@@ -30,4 +30,12 @@ if __name__ == '__main__':
         project_config=project_config
     )
 
-    repo.extract_info(args.per_branch, args.max_age, args.only)
+    # update to latest
+    repo.to_latest()
+
+    # extract commit details
+    repo.extract_info(
+        args.per_branch,
+        args.max_age,
+        args.only
+    )
