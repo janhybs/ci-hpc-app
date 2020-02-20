@@ -101,7 +101,7 @@ class ProjectConfig:
             self._run_jobs(context)
         except ProjectError as e:
             logger.error(f"Error: {e}")
-            exit(1)
+            # exit(1)
 
     def _run_jobs(self, context):
         context = {**self.context, **(context or {})}

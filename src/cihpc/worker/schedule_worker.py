@@ -30,7 +30,11 @@ if __name__ == '__main__':
         status=ColScheduleStatus.NotProcessed,
     ))
 
-    for schedule in cursor:
+    scheduler_items = list(cursor)
+    total = len(scheduler_items)
+
+    for i, schedule in enumerate(scheduler_items):
+        logger.info(f"Schedule {i+1:d}/{total:2d} starting")
         _id = schedule.id
         index = schedule.index
         repetitions = schedule.details.repetitions

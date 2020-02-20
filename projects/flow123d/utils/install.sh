@@ -4,6 +4,7 @@ cd flow123d
 ls -la
 
 git checkout -- src/mesh/mesh.cc
+git checkout -- src/fields/fe_value_handler.cc
 python3 /storage/liberec3-tul/home/jan-hybs/ci-hpc/projects/flow123d/patches/patch.py
 
 
