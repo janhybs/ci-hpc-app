@@ -1,3 +1,10 @@
+import sys
+MIN_PYTHON = 3, 6
+
+if sys.version_info < MIN_PYTHON:
+    sys.exit("Error: Python %s.%s or later is required.\n" % MIN_PYTHON)
+
+
 from loguru import logger
 
 from cihpc.config import get_project_config

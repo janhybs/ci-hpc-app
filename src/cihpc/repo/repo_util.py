@@ -1,3 +1,4 @@
+from collections import defaultdict
 from pathlib import Path
 from typing import List, Union, Iterable, Dict
 
@@ -8,16 +9,16 @@ import os
 from cihpc.config.types.project_config import ProjectConfig
 from cihpc.config.types.project_config_git import GitSpec
 from cihpc.config.types.project_config_job import ProjectConfigJob
+from cihpc.shared.db.cols.col_repo_info import ColRepoInfo
 from cihpc.shared.db.cols.col_schedule import ColScheduleDetails, ColSchedule, ColScheduleStatus
 from cihpc.shared.db.db_stats import DBStats
-from cihpc.shared.db.mongo_db import Mongo
+from cihpc.shared.db.mongo_db import Mongo, in_list
 from cihpc.shared.db.timer_index import TimerIndex
 from cihpc.shared.errors.custom_errors import ProjectError
 from cihpc.shared.utils import job_util, string_util
 from cihpc.shared.utils.data_util import distinct
 from cihpc.shared.utils.git_utils import get_active_branches, BranchCommit, extract_date_from_head, iter_revision
-from git import Repo, RemoteReference, Head
-
+from git import Repo, RemoteReference, Head, Commit
 
 default_min_age = maya.when('6 months ago')
 
@@ -48,7 +49,8 @@ class RepoUtil:
             for commit in iter_revision(self.repo, branch.head, limit=max_per_branch):
                 yield BranchCommit(branch=branch, commit=commit)
 
-    def get_commits(self, branches: List[Union[str, Head]] = None, min_age=default_min_age, max_per_branch=10) -> Iterable[BranchCommit]:
+    def get_commits(self, branches: List[Union[str, Head]] = None, min_age=default_min_age, max_per_branch=10) -> \
+            Iterable[BranchCommit]:
         for branch_commit in distinct(self._get_commits(branches, min_age, max_per_branch)):
             yield branch_commit
 
@@ -74,10 +76,12 @@ class RepoUtil:
             schedule_document.details.repetitions -= scheduled_already
             if schedule_document.details.repetitions > 0:
                 Mongo().col_scheduler.insert(schedule_document)
-                logger.debug(f"Inserted {schedule_document.details.repetitions} requests for the job:\n{test_job.pretty_index}")
+                logger.debug(
+                    f"Inserted {schedule_document.details.repetitions} requests for the job:\n{test_job.pretty_index}")
                 yield schedule_document.details.repetitions
             else:
-                logger.debug(f"Already scheduled {scheduled_already} runs, which is more than enough:\n{test_job.pretty_index}")
+                logger.debug(
+                    f"Already scheduled {scheduled_already} runs, which is more than enough:\n{test_job.pretty_index}")
 
     def schedule_runs(self, branches=None, job_name: str = "test"):
         for branch_commit in self.get_commits(branches, max_per_branch=30):
@@ -106,3 +110,46 @@ class RepoUtil:
                 worker=None
             )
             yield schedule_document, schedule_index
+
+    def extract_info(self, per_branch, max_age, single_branch=None):
+        branches = single_branch if single_branch else get_active_branches(self.repo, max_age)
+
+        info: Dict[Commit, List[str]] = defaultdict(list)
+        documents = list()
+
+        for branch in branches:
+            branch_head = None if isinstance(branch, str) else branch.head
+            branch_name = branch if not branch_head else str(branch.head)
+            branch_full = f"origin/{branch_name}" if not branch_name.startswith("origin/") else branch_name
+            branch_short = branch_full[7:]
+
+            for commit in iter_revision(self.repo, branch_head or branch_full, limit=per_branch, first_parent=True):
+                info[commit].append(branch_short)
+
+        for commit, branches in info.items():
+            doc = ColRepoInfo()
+            doc.author = commit.author.name
+            doc.email = commit.author.email
+            doc.commit = commit.hexsha
+            doc.branches = branches
+            doc.branch = None if len(branches) > 1 else branches[0]
+            doc.authored_datetime = commit.authored_datetime
+            doc.committed_datetime = commit.committed_datetime
+            doc.message = commit.message
+            doc.distance = -1
+            documents.append(doc)
+
+        results = Mongo().col_repo_info.find(
+            {"commit": in_list([doc.commit for doc in documents])},
+            ["commit"],
+            raw=True
+        )
+
+        existing = [r.commit for r in results]
+        filtered = [d for d in documents if d.commit not in existing]
+        logger.info(f"Inspected total of {len(documents)} commits, {len(filtered)} new ones")
+
+        if filtered:
+            Mongo().col_repo_info.insert_many(filtered)
+        else:
+            logger.info(f"No new commits to inspect...")

@@ -6,6 +6,7 @@ from pymongo import MongoClient
 
 from cihpc.shared.db.cols.col_index_info import ColIndexInfo
 from cihpc.shared.db.cols.col_index_stat import ColIndexStat
+from cihpc.shared.db.cols.col_repo_info import ColRepoInfo
 from cihpc.shared.db.cols.col_schedule import ColSchedule
 from cihpc.shared.db.cols.col_timers import ColTimer
 from cihpc.shared.db.models import IdEntity
@@ -13,10 +14,14 @@ from cihpc.shared.db.timer_index import TimerIndex
 from cihpc.shared.errors.config_error import ConfigError
 from cihpc.shared.g import G
 
-AllColTypes = Union[IdEntity, ColIndexInfo, ColSchedule, ColTimer, ColIndexStat]
+AllColTypes = Union[IdEntity, ColIndexInfo, ColSchedule, ColTimer, ColIndexStat, ColRepoInfo]
 MatchType = Union[TimerIndex, Dict]
 
 _timer_index_keys = list(TimerIndex().keys())
+
+
+def in_list(items):
+    return {"$in": items}
 
 
 class MongoCollection:
@@ -25,11 +30,11 @@ class MongoCollection:
         self._factory = factory
         self.name = collection.name
 
-    def find(self, index: MatchType, projection: List = None) -> List[AllColTypes]:
+    def find(self, index: MatchType, projection: List = None, raw=False, **kwargs) -> List[AllColTypes]:
         match = dict()
         for k, v in index.items():
-            if v is not None:
-                if k in _timer_index_keys:
+            if v is not None or raw:
+                if k in _timer_index_keys and not raw:
                     match[f"index.{k}"] = v
                 else:
                     match[f"{k}"] = v
@@ -68,6 +73,7 @@ class MongoImpl(object):
     :type col_scheduler: MongoColSchedule
     :type col_index_stat: MongoColIndexStat
     :type col_index_info: MongoColIndexInfo
+    :type col_repo_info: MongoColRepoInfo
     """
 
     def __init__(self, project_name):
@@ -97,6 +103,11 @@ class MongoImpl(object):
         self.col_index_info = MongoCollection(
             self.db.get_collection(self.config_artifacts.get('col_index_info_name', f'indexinfo-{G.version}')),
             ColIndexInfo
+        )
+        # noinspection PyTypeChecker
+        self.col_repo_info = MongoCollection(
+            self.db.get_collection(self.config_artifacts.get('col_repo_info_name', f'repoinfo-{G.version}')),
+            ColRepoInfo
         )
         # noinspection PyTypeChecker
         self.col_index_stat = MongoCollection(
@@ -133,32 +144,46 @@ class Mongo:
 
 
 class MongoColTimer(MongoCollection):
-    def find(self, match: MatchType = None, projection: List = None) -> List[ColTimer]:
-        return super().find(match, projection)
+    def find(self, match: MatchType = None, projection: List = None, **kwargs) -> List[ColTimer]:
+        return super().find(match, projection, **kwargs)
 
     def aggregate(self, pipeline: List[Dict], **kwargs) -> List[ColTimer]:
         return super().aggregate(pipeline, **kwargs)
 
 
 class MongoColSchedule(MongoCollection):
-    def find(self, match: MatchType = None, projection: List = None) -> List[ColSchedule]:
-        return super().find(match, projection)
+    def find(self, match: MatchType = None, projection: List = None, **kwargs) -> List[ColSchedule]:
+        return super().find(match, projection, **kwargs)
 
     def aggregate(self, pipeline: List[Dict], **kwargs) -> List[ColSchedule]:
         return super().aggregate(pipeline, **kwargs)
 
 
 class MongoColIndexStat(MongoCollection):
-    def find(self, match: MatchType = None, projection: List = None) -> List[ColIndexStat]:
-        return super().find(match, projection)
+    def find(self, match: MatchType = None, projection: List = None, **kwargs) -> List[ColIndexStat]:
+        return super().find(match, projection, **kwargs)
 
     def aggregate(self, pipeline: List[Dict], **kwargs) -> List[ColIndexStat]:
         return super().aggregate(pipeline, **kwargs)
 
 
 class MongoColIndexInfo(MongoCollection):
-    def find(self, match: MatchType = None, projection: List = None) -> List[ColIndexInfo]:
-        return super().find(match, projection)
+    def find(self, match: MatchType = None, projection: List = None, **kwargs) -> List[ColIndexInfo]:
+        return super().find(match, projection, **kwargs)
 
     def aggregate(self, pipeline: List[Dict], **kwargs) -> List[ColIndexInfo]:
         return super().aggregate(pipeline, **kwargs)
+
+
+class MongoColRepoInfo(MongoCollection):
+    def find(self, index: MatchType = None, projection: List = None, **kwargs) -> List[ColRepoInfo]:
+        return super().find(index, projection, **kwargs)
+
+    def aggregate(self, pipeline: List[Dict], **kwargs) -> List[ColRepoInfo]:
+        return super().aggregate(pipeline, **kwargs)
+
+    def insert(self, value: ColRepoInfo, **kwargs):
+        return super().insert(value, **kwargs)
+
+    def insert_many(self, documents: List[ColRepoInfo], **kwargs):
+        return super().insert_many(documents, **kwargs)

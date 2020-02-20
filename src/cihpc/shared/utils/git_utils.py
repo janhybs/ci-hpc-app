@@ -63,7 +63,7 @@ def extract_date_from_head(head: Head):
     return maya.MayaDT.from_datetime(head.commit.authored_datetime)
 
 
-def iter_revision(repo: Repo, revision: Union[Head, str], limit=10) -> List[Commit]:
+def iter_revision(repo: Repo, revision: Union[Head, str], limit=10, **kwargs) -> List[Commit]:
     if isinstance(revision, Head):
         rev = revision.name
     elif isinstance(revision, str):
@@ -71,7 +71,11 @@ def iter_revision(repo: Repo, revision: Union[Head, str], limit=10) -> List[Comm
     else:
         rev = revision
 
-    for i, cmt in enumerate(repo.iter_commits(rev=rev)):
+    # basically no limit
+    if limit < 0:
+        limit = 10**10
+
+    for i, cmt in enumerate(repo.iter_commits(rev=rev, **kwargs)):
         if i >= limit:
             break
         yield cmt

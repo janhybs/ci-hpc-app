@@ -1,5 +1,5 @@
 import sys
-MIN_PYTHON = 3, 7
+MIN_PYTHON = 3, 6
 
 if sys.version_info < MIN_PYTHON:
     sys.exit("Error: Python %s.%s or later is required.\n" % MIN_PYTHON)
@@ -13,7 +13,7 @@ from cihpc.shared.db.cols.col_schedule import ColScheduleStatus
 from cihpc.shared.db.mongo_db import Mongo
 from cihpc.shared.db.timer_index import TimerIndex
 from cihpc.shared.g import G
-from cihpc.shared.utils import data_util, data_util
+from cihpc.shared.utils import data_util
 
 if __name__ == '__main__':
     args = parse_scheduler_args()
