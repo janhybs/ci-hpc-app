@@ -42,3 +42,11 @@ dl {
   }
 }
 
+.highcharts-tooltip {
+  & > span {
+    cursor: pointer !important;
+    & > a {
+      pointer-events: all !important;
+    }
+  }
+}

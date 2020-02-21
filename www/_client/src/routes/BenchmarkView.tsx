@@ -25,7 +25,7 @@ addHighchartsMore(Highcharts);
 
 (window as any).Color = Color;
 (window as any).Highcharts = Highcharts;
-const defaultFormat = (i: number) => i.toFixed(2);
+const defaultFormat = (i: any) => i.toFixed(2);
 
 
 const noFormat = i => i;
@@ -53,19 +53,21 @@ class Prop {
 
 const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)[]) => {
 
-    return `<code>
-        <a href="${flow123dCommitUrl}${xLabels[point.x]}" target="_blank">
-            ${xLabels[point.x].substr(0, 16)}
-        </a>
-    </code>
-    <dl class="boxplot">
-        ${props.map(p => {
-        const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
-        const value = prop.format(prop.prop(point) || NaN);
-        return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
-    }).join("")
-        }
-    <dl>`
+    return `<div onclick="window.open('${flow123dCommitUrl}${xLabels[point.x]}', '_blank')">
+        <code>
+            <a href="${flow123dCommitUrl}${xLabels[point.x]}" target="_blank">
+                ${xLabels[point.x].substr(0, 16)}
+            </a>
+        </code>
+        <dl class="boxplot">
+            ${props.map(p => {
+            const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
+            const value = prop.format(prop.prop(point) || NaN);
+            return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
+        }).join("")
+            }
+        <dl>
+    </div>`
 }
 
 
@@ -260,13 +262,17 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             },
                             tickInterval: 1,
                             labels: {
+                                style: {
+                                    fontSize: "9px"
+                                },
+                                // useHTML: true,
                                 enabled: !this.props.hideXTicks,
                                 formatter: function () {
                                     try {
                                         const info = commitInfo.get(xLabels[this.value]);
 
                                         return !info ? xLabels[this.value].substr(0, 8) :
-                                            `${info.branch} ${moment(info.date as any).fromNow()}`
+                                            `${moment(info.date as any).fromNow(true)} - ${info.branch || info.branches}`
                                     } catch (error) {
                                         return "";
                                     }
@@ -321,6 +327,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                         return pointFormatter(xLabels, this,
                                             new Prop("count", "N", i => i.toFixed()),
                                             new Prop("info.branch", "Branch", noFormat),
+                                            new Prop("info.branches", "Branches", (i: string[]) => i.join(", ")),
                                             "count",
                                             "low",
                                             "q1",

@@ -80,6 +80,7 @@
 	}
 	export interface IGitInfo {
 		branch?: string;
+		branches?: string[];
 		date?: Date;
 		message?: string;
 	}
