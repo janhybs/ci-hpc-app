@@ -24,6 +24,12 @@ class ColRepoInfo(IdEntity):
     # list of candidates
     branches: List[str]
 
+    # list of parents and children
+    parents: List[str]
+    children: List[str]
+
     def __init__(self, **kwargs):
         self.branches = kwargs.pop('branches', [])
+        self.branches = kwargs.pop('parents', [])
+        self.children = kwargs.pop('children', [])
         super().__init__(**kwargs)

@@ -1,4 +1,4 @@
-from typing import Dict, Union, Type, List
+from typing import Dict, Union, Type, List, Callable
 
 import pymongo
 from loguru import logger
@@ -60,8 +60,32 @@ class MongoCollection:
             {"$set": {k: v for k, v in updates.items()}}
         )
 
+    def batch_replace(self, documents: List[AllColTypes]):
+        for document in documents:
+            if isinstance(document, IdEntity):
+                yield self._collection.replace_one(
+                    dict(_id=document.id),
+                    document
+                )
+            else:
+                yield self._collection.replace_one(
+                    dict(_id=document["_id"]),
+                    document
+                )
+
+    def batch_update(self, documents: List[AllColTypes], match: Callable[[AllColTypes], dict], replace: Callable[[AllColTypes], dict]):
+        for d in documents:
+            yield self._collection.update_one(
+                match(d),
+                {"$set": replace(d)}
+            )
+
     def __repr__(self):
         return f"<Col({self.name})>"
+
+    @property
+    def collection(self):
+        return self._collection
 
 
 class MongoImpl(object):
@@ -123,8 +147,18 @@ class MongoImpl(object):
         logger.debug(
             f'connected: {self}, {self.db.name}:{{{self.col_timers.name}, {self.col_index_info.name}, {self.col_scheduler.name}}}')
 
+        self.ensure_index()
+
+    def ensure_index(self):
+        result = self.col_repo_info.collection.create_index(
+            "commit",
+            unique=True,
+            name="unique_commit"
+        )
+        logger.info(f"created index {result}")
+
     def __repr__(self):
-        return 'Mongo({self.client.address[0]}:{self.client.address[1]})'.format(self=self)
+        return f'Mongo({self.client.address[0]}:{self.client.address[1]})'
 
 
 class Mongo:

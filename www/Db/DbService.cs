@@ -12,6 +12,7 @@ namespace CC.Net.Db
         private readonly IMongoDatabase _dB;
         public readonly IMongoCollection<ColScheduler> ColScheduler;
         public readonly IMongoCollection<ColTimers> ColTimers;
+        public readonly IMongoCollection<ColRepoInfo> ColRepoInfo;
 
         public DbService(MongoDBConfig dBConfig)
         {
@@ -26,8 +27,10 @@ namespace CC.Net.Db
                 )
             });
             _dB = _client.GetDatabase(_dBConfig.Database);
+            
             ColScheduler = _dB.GetCollection<ColScheduler>(_dBConfig.CollectionScheduler);
             ColTimers = _dB.GetCollection<ColTimers>(_dBConfig.CollectionTimers);
+            ColRepoInfo = _dB.GetCollection<ColRepoInfo>(_dBConfig.CollectionRepoInfo);
         }
     }
 }

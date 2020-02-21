@@ -31,7 +31,8 @@ namespace CC.Net
             services.AddSingleton(MongoDBConfig);
             services.AddSingleton(AppOptions);
             services.AddSingleton(new GitInfoService(AppOptions));
-            services.AddScoped<DbService>();
+            services.AddSingleton<DbService>();
+            services.AddSingleton<RepoInfoCache>();
             services.AddControllersWithViews();
 
             // In production, the React files will be served from this directory

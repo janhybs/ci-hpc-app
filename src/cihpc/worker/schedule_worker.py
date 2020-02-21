@@ -60,14 +60,3 @@ if __name__ == '__main__':
         except Exception as e:
             print(f"{Mongo().col_scheduler.update(schedule, status=ColScheduleStatus.NotProcessed)}")
             logger.error(f"Error: {e}")
-
-
-
-
-    # project_config.set_desired_variables()
-    #
-    # for i in cursor:
-    #     print(i)
-
-
-    # project_config.execute()

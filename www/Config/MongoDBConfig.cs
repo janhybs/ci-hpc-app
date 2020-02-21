@@ -13,5 +13,6 @@ namespace CC.Net.Config
         public string CollectionTimers { get; set; }
         public string CollectionScheduler { get; set; }
         public string CollectionIndexInfo { get; set; }
+        public string CollectionRepoInfo { get; set; }
     }
 }

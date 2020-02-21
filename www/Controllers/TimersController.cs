@@ -24,13 +24,15 @@ namespace CC.Net.Controllers
         private readonly ILogger<TimersController> _logger;
         private readonly DbService _dbService;
 
+         private readonly RepoInfoCache _repoInfo;
+
         private readonly GitInfoService _gitInfo;
 
-        public TimersController(ILogger<TimersController> logger, DbService dbService, GitInfoService gitInfo)
+        public TimersController(ILogger<TimersController> logger, DbService dbService, RepoInfoCache repoInfo)
         {
             _logger = logger;
             _dbService = dbService;
-            _gitInfo = gitInfo;
+            _repoInfo = repoInfo;
         }
 
         [HttpPost]
@@ -73,7 +75,7 @@ namespace CC.Net.Controllers
                     i => i.Commit,
                     (k, i) => new SimpleTimers {
                         Commit = k,
-                        Info = _gitInfo.Get(k),
+                        Info = GitInfo.From(_repoInfo[k]),
                         Branch = i.First().Branch,
                         Durations = i.Select(j => j.Duration)
                             .OrderBy(i => i)

@@ -3,7 +3,7 @@ import maya
 
 
 class RepoInfoParser(CommonParser):
-    per_branch: int = 100
+    per_branch: int = 25
     max_age: maya.MayaDT = maya.when("24 months ago")
     only: str = None
 

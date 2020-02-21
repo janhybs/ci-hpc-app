@@ -20,7 +20,7 @@ from cihpc.shared.utils.data_util import distinct
 from cihpc.shared.utils.git_utils import get_active_branches, BranchCommit, extract_date_from_head, iter_revision
 from git import Repo, RemoteReference, Head, Commit
 
-default_min_age = maya.when('6 months ago')
+default_min_age = maya.when('12 months ago')
 
 
 class RepoUtil:
@@ -115,6 +115,17 @@ class RepoUtil:
         logger.info("pulling latest changes")
         self.repo.remote().pull()
 
+    def _update_edges(self, documents: List[ColRepoInfo]):
+        children = defaultdict(list)
+        for d in documents:
+            for p in d.parents:
+                children[p].append(d.commit)
+
+        for d in documents:
+            d.children = children[d.commit]
+
+        return documents
+
     def extract_info(self, per_branch, max_age, single_branch=None):
         logger.info("obtaining commit details")
         branches = single_branch if single_branch else get_active_branches(self.repo, max_age)
@@ -128,7 +139,7 @@ class RepoUtil:
             branch_full = f"origin/{branch_name}" if not branch_name.startswith("origin/") else branch_name
             branch_short = branch_full[7:]
 
-            for commit in iter_revision(self.repo, branch_head or branch_full, limit=per_branch, first_parent=True):
+            for commit in iter_revision(self.repo, branch_head or branch_full, limit=per_branch, first_parent=False):
                 info[commit].append(branch_short)
 
         for commit, branches in info.items():
@@ -142,6 +153,7 @@ class RepoUtil:
             doc.committed_datetime = commit.committed_datetime
             doc.message = commit.message
             doc.distance = -1
+            doc.parents = [c.hexsha for c in commit.parents]
             documents.append(doc)
 
         logger.info("comparing changes in db")
@@ -151,6 +163,9 @@ class RepoUtil:
             raw=True
         )
 
+        logger.info("traversing parents")
+        documents = self._update_edges(documents)
+
         existing = [r.commit for r in results]
         filtered = [d for d in documents if d.commit not in existing]
         logger.info(f"inspected total of {len(documents)} commits, {len(filtered)} new ones")
@@ -159,3 +174,14 @@ class RepoUtil:
             Mongo().col_repo_info.insert_many(filtered)
         else:
             logger.info(f"no new commits to add...")
+
+        logger.info("updating commit parents and children")
+        changes = list(Mongo().col_repo_info.batch_update(
+            documents,
+            lambda x: dict(commit=x.commit),
+            lambda x: dict(
+                parents=x.parents,
+                children=x.children
+            ),
+        ))
+        logger.info(f"updated {len(changes)} parents and children")
