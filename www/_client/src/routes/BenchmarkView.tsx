@@ -202,6 +202,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             medianVisible = isSmall,
             outliersVisible = false,
             defaultZoom = !isSmall;
+        
+        if (data.length === 0) {
+            return <>
+                loading...
+            </>
+        }
 
         return <>
             {!this.props.simple &&
