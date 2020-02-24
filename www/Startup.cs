@@ -15,6 +15,7 @@ namespace CC.Net
     {
         public Startup(IConfiguration configuration)
         {
+            Console.WriteLine("Starting application");
             Configuration = configuration;
             MongoDBConfig = Configuration.GetSection("MongoDB").Get<MongoDBConfig>();
             AppOptions = Configuration.Get<AppOptions>();

@@ -20,7 +20,7 @@
     "noEmit": true,
     "jsx": "preserve",
     "noImplicitAny": false,
-    "downlevelIteration": true,
+    "downlevelIteration": true
   },
   "include": [
     "src"

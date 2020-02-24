@@ -2,7 +2,6 @@ import React from 'react';
 // import { Collapse, Container, Navbar, NavbarBrand, NavbarToggler, NavItem, NavLink } from 'reactstrap';
 import { Navbar, Container, NavbarBrand, Collapse, NavItem } from 'react-bootstrap';
 import { NavLink } from 'react-router-dom';
-import './NavMenu.css';
 
 
 interface NavMenuState {

@@ -1,5 +1,4 @@
 import React from "react";
-import { NotificationManager } from 'react-notifications';
 
 import { observer } from "mobx-react"
 import { observable } from "mobx"
@@ -14,12 +13,10 @@ import Color from "color"
 import moment from "moment";
 import "../styles/chart.css";
 
-// import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts/highstock';
-// import HighchartMore from 'highcharts/highcharts-more';
-// HighchartMore(ReactHighchart.Highcharts);
 import addHighchartsMore from 'highcharts/highcharts-more';
+import { NotificationApi } from "../utils/Notification";
 addHighchartsMore(Highcharts);
 
 
@@ -37,6 +34,9 @@ interface IOutlier {
     x?: string;
     y?: number;
 }
+
+const filterBranches = (branches: string[]) =>
+    branches.filter(i => i != "HEAD");
 
 class Prop {
     constructor(public key: string, public title?: string, public format = defaultFormat) {
@@ -155,7 +155,8 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                 this.outliers = outliers
 
                 this.model.items = data;
-                NotificationManager.success('Data loaded', null, 1000);
+
+                NotificationApi.success('Data loaded', "", 1000);
             });
     }
 
@@ -327,7 +328,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                         return pointFormatter(xLabels, this,
                                             new Prop("count", "N", i => i.toFixed()),
                                             new Prop("info.branch", "Branch", noFormat),
-                                            new Prop("info.branches", "Branches", (i: string[]) => i.join(", ")),
+                                            new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
                                             "count",
                                             "low",
                                             "q1",

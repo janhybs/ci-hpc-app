@@ -28,7 +28,7 @@ export class Home extends Component {
     return (
       <div className="row">
         {configurations.map((configuration, i) =>
-          <div className="chart-wrapper col col-lg-6">
+          <div key={i} className="chart-wrapper col col-lg-6">
             <div className="chart-inner">
               <BenchmarkView
                 size="small" configuration={configuration}
