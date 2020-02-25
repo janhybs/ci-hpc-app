@@ -9,6 +9,7 @@ import 'font-awesome/css/font-awesome.min.css';
 import './styles/index.css';
 import './styles/table.css';
 import './styles/diff.css';
+import './styles/loading.css';
 import 'animate.css/animate.min.css';
 
 import ReactNotification from 'react-notifications-component';

@@ -1,11 +1,18 @@
-import { PropagateLoader } from "react-spinners";
+import { BarLoader } from "react-spinners";
 import React from "react";
-import "../styles/spinners.css"
+// import "../styles/spinners.css"
 
-export class SimpleLoader extends React.Component {
-    render() {
-        return <div className="simple-loader">
-            <PropagateLoader loading/>
-        </div>
-    }
+interface SimpleLoaderProps {
+    color?: string;
+    message?: string;
 }
+
+export const SimpleLoader = (props: SimpleLoaderProps) =>
+    <>
+        <div className="loading-wrapper">
+            <div>
+                <BarLoader color={props.color || "#28a745"} />
+                <span>{props.message || "loading..."}</span>
+            </div>
+        </div>
+    </>

@@ -17,6 +17,8 @@ import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts/highstock';
 import addHighchartsMore from 'highcharts/highcharts-more';
 import { NotificationApi } from "../utils/Notification";
+import { BarLoader } from "react-spinners";
+import { SimpleLoader } from "../components/SimpleLoader";
 addHighchartsMore(Highcharts);
 
 
@@ -204,9 +206,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             defaultZoom = !isSmall;
         
         if (data.length === 0) {
-            return <>
-                loading...
-            </>
+            return <SimpleLoader />
         }
 
         return <>
@@ -370,12 +370,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     {!this.props.simple &&
                         <div>
                             <Alert variant="info">
-                                <em>Note</em> If <strong>|max - μ| > ε/μ</strong>, max is marked as an outlier if the chart
-                                in order to simplify the chart, <strong>ε</strong> is currently {outlierCoef * 100}%
-                            </Alert>
-                            <Alert variant="info">
                                 <em>Note</em> By default only the last {maxCommitByDefault} commits are visible,
                                 use <strong>Reset zoom</strong> to view all of the commits
+                            </Alert>
+                            <Alert variant="light">
+                                <em>Note</em> If <strong>|max - μ| > ε/μ</strong>, max is marked as an outlier if the chart
+                                in order to simplify the chart, <strong>ε</strong> is currently {outlierCoef * 100}%
                             </Alert>
                         </div>
                     }
