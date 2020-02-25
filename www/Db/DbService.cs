@@ -1,5 +1,6 @@
 using CC.Net.Collections;
 using CC.Net.Config;
+using CC.Net.Services;
 using MongoDB.Driver;
 using System;
 
@@ -13,6 +14,9 @@ namespace CC.Net.Db
         public readonly IMongoCollection<ColScheduler> ColScheduler;
         public readonly IMongoCollection<ColTimers> ColTimers;
         public readonly IMongoCollection<ColRepoInfo> ColRepoInfo;
+        public readonly IMongoCollection<ColIndexInfo> ColIndexInfo;
+
+        public readonly CachedCollection<ColIndexInfo> CachedColIndexInfo;
 
         public DbService(MongoDBConfig dBConfig)
         {
@@ -26,11 +30,15 @@ namespace CC.Net.Db
                     _dBConfig.Password
                 )
             });
+            
             _dB = _client.GetDatabase(_dBConfig.Database);
             
             ColScheduler = _dB.GetCollection<ColScheduler>(_dBConfig.CollectionScheduler);
             ColTimers = _dB.GetCollection<ColTimers>(_dBConfig.CollectionTimers);
             ColRepoInfo = _dB.GetCollection<ColRepoInfo>(_dBConfig.CollectionRepoInfo);
+            ColIndexInfo = _dB.GetCollection<ColIndexInfo>(_dBConfig.CollectionIndexInfo);
+
+            CachedColIndexInfo = new CachedCollection<ColIndexInfo>(ColIndexInfo);
         }
     }
 }

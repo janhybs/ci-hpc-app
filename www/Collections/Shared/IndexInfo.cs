@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace CC.Net.Collections
+namespace cc.net.Collections.Shared
 {
     [BsonIgnoreExtraElements]
     public class IndexInfo
@@ -30,7 +30,7 @@ namespace CC.Net.Collections
         public string Mesh { get; set; }
 
         [BsonElement("cpus")]
-        public int Cpus { get; set; }
+        public int? Cpus { get; set; }
 
         [BsonElement("frame")]
         public string Frame { get; set; }

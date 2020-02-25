@@ -14,7 +14,8 @@ namespace CC.Net.Services
 
         public static GitInfo From(Commit commit, string branch = null)
         {
-            return new GitInfo{
+            return new GitInfo
+            {
                 Date = commit.Author.When,
                 Message = commit.MessageShort,
                 Branch = branch,
@@ -23,19 +24,26 @@ namespace CC.Net.Services
 
         public static GitInfo From(ColRepoInfo repoInfo)
         {
-            if (repoInfo == null) {
-                return new GitInfo{
-                    Date = new DateTimeOffset(),
-                    Message = null,
-                    Branch = null,
-                };
+            if (repoInfo == null)
+            {
+                return Empty();
             }
-            
-            return new GitInfo{
+
+            return new GitInfo
+            {
                 Date = repoInfo.AuthoredDatetime,
                 Message = repoInfo.Message,
                 Branch = repoInfo.Branch,
                 Branches = repoInfo.Branches,
+            };
+        }
+        public static GitInfo Empty()
+        {
+            return new GitInfo
+            {
+                Date = new DateTimeOffset(),
+                Message = null,
+                Branch = null,
             };
         }
     }

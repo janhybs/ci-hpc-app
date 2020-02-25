@@ -1,11 +1,12 @@
-using System.Collections.Generic;
+using cc.net.Collections.Shared;
+using CC.Net.Db;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace CC.Net.Collections
 {
     [BsonIgnoreExtraElements]
-    public class ColScheduler
+    public class ColScheduler: ICollection
     {
         [BsonId]
         [BsonElement("_id")]

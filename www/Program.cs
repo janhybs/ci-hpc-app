@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using cc.net.Collections.Shared;
 using CC.Net.Collections;
 using CC.Net.Dto;
 using Microsoft.AspNetCore;

@@ -296,12 +296,19 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                 name: "Median",
                                 visible: medianVisible,
                                 stickyTracking: medianVisible,
-                                data: data.map(i => i.median as number),
+                                data: data.map(i => {
+                                    return {
+                                        y: i.median as number,
+                                        x: commits.get(i.commit),
+                                        color: i.isBroken ? "red" : null
+                                    } as any;
+                                }),
                                 enableMouseTracking: medianVisible,
-                                lineWidth: 2,
-                                dashStyle: "ShortDot",
+                                lineWidth: 1,
+                                dashStyle:  isSmall ? "Solid" : "ShortDot",
                                 marker: {
-                                    enabled: false
+                                    enabled: isSmall,
+                                    radius: 4,
                                 },
                                 fillColor: {
                                     linearGradient: {
@@ -345,7 +352,11 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                     }
                                 },
                                 data: data.map(i => {
-                                    return { ...i, x: commits.get(i.commit) };
+                                    return {
+                                        ...i,
+                                        x: commits.get(i.commit),
+                                        color: i.isBroken ? "red" : null
+                                    };
                                 })
                             },
                             {

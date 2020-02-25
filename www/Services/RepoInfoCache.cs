@@ -21,6 +21,10 @@ namespace CC.Net.Services
         {
             return GetAll(MinDateTime);
         }
+        public IEnumerable<ColRepoInfo> GetAll(int daysOld)
+        {
+            return GetAll(DateTime.Now.AddDays(-daysOld));
+        }
 
         public IEnumerable<ColRepoInfo> GetAll(DateTime minDateTime)
         {

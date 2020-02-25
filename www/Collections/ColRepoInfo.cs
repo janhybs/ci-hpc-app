@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using CC.Net.Db;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace CC.Net.Collections
 {
     [BsonIgnoreExtraElements]
-    public class ColRepoInfo
+    public class ColRepoInfo: ICollection
     {
         [BsonId]
         [BsonElement("_id")]

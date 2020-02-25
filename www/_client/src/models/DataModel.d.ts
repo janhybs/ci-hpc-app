@@ -36,6 +36,14 @@
 		name?: string;
 		path?: string;
 	}
+	export interface IObjectId {
+		creationTime?: Date;
+		empty?: IObjectId;
+		increment?: number;
+		machine?: number;
+		pid?: number;
+		timestamp?: number;
+	}
 	export interface IIndexInfo {
 		benchmark?: string;
 		branch?: string;
@@ -65,18 +73,11 @@
 		durations?: number[];
 		high?: number;
 		info?: IGitInfo;
+		isBroken?: boolean;
 		low?: number;
 		median?: number;
 		q1?: number;
 		q3?: number;
-	}
-	export interface IObjectId {
-		creationTime?: Date;
-		empty?: IObjectId;
-		increment?: number;
-		machine?: number;
-		pid?: number;
-		timestamp?: number;
 	}
 	export interface IGitInfo {
 		branch?: string;

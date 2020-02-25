@@ -4,15 +4,17 @@ using System.Text.Json.Serialization;
 using CC.Net.Services;
 using NumSharp;
 
-namespace CC.Net.Collections
+namespace cc.net.Collections.Shared
 {
     public class SimpleTimers
     {
         public string Commit { get; set; }
         public string Branch { get; set; }
 
+        public bool isBroken { get; set; } = false;
+
         public GitInfo Info { get; set; }
-        
+
         [JsonIgnore]
         public double[] Durations { get; set; }
 
@@ -23,7 +25,7 @@ namespace CC.Net.Collections
             get
             {
                 return Durations
-                    [Durations.Count()/2];
+                    [Durations.Count() / 2];
             }
         }
 
@@ -33,7 +35,7 @@ namespace CC.Net.Collections
             {
                 var l = Durations.Count();
                 return Durations
-                    [(int) (l*0.25)];
+                    [(int)(l * 0.25)];
             }
         }
 
@@ -43,7 +45,7 @@ namespace CC.Net.Collections
             {
                 var l = Durations.Count();
                 return Durations
-                    [(int) (l*0.75)];
+                    [(int)(l * 0.75)];
             }
         }
 
