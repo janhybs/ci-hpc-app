@@ -5,7 +5,7 @@ import { httpClient } from "../init";
 import { IColScheduler, ISchedulerFilter } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import Moment from 'react-moment';
-import { DropdownButton, Alert } from "react-bootstrap";
+import { DropdownButton, Alert, Container } from "react-bootstrap";
 
 const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
 enum ColSchedulerStatus {
@@ -18,9 +18,9 @@ const limitValue = 15;
 
 
 const schedulerStatuses = [
-    {name: "In Queue", value: ColSchedulerStatus.NotProcessed},
-    {name: "Processed", value: ColSchedulerStatus.Processed},
-    {name: "Running", value: ColSchedulerStatus.Running},
+    { name: "In Queue", value: ColSchedulerStatus.NotProcessed },
+    { name: "Processed", value: ColSchedulerStatus.Processed },
+    { name: "Running", value: ColSchedulerStatus.Running },
 ];
 
 interface SchedulerListState {
@@ -64,7 +64,7 @@ export class SchedulerList extends React.Component<{}, SchedulerListState, {}> {
             <code>
                 <a href={flow123dCommitUrl + index.commit} target="_blank">
                     {index.commitShort} [{index.branch}]
-                </a> - {this.getStatusName(scheduler.status)} 
+                </a> - {this.getStatusName(scheduler.status)}
             </code>
             <div>submitted <Moment date={date} fromNow ago /> ago</div>
         </li>
@@ -78,7 +78,7 @@ export class SchedulerList extends React.Component<{}, SchedulerListState, {}> {
         this.load();
     }
 
-    getStatusName(status: any){
+    getStatusName(status: any) {
         const statusName = schedulerStatuses.find(i => i.value === status);
         return statusName ? statusName.name : "";
     }
@@ -86,26 +86,26 @@ export class SchedulerList extends React.Component<{}, SchedulerListState, {}> {
 
     render() {
         const items = this.model.items;
-        
-        return <>
-        <DropdownButton id="dropdown-basic-button" title={`${this.getStatusName(this.model.filter.status)} [${this.model.items.length}]`}>
-            {schedulerStatuses.map(item => 
-                <Dropdown.Item key={item.value} onSelect={i => this.switchStatus(item.value)}>{item.name}</Dropdown.Item>
-            )}
-        </DropdownButton>
-        <div>
-            <ul>
-                {items
-                    .filter((i, j) => i.index != null && j < limitValue)
-                    .map(i => this.renderStatus(i as Required<IColScheduler>))
-                }
-                {items.length > limitValue &&
-                    <Alert variant="warning">
-                        {items.length - limitValue} items are hidden
+
+        return <Container>
+            <DropdownButton id="dropdown-basic-button" title={`${this.getStatusName(this.model.filter.status)} [${this.model.items.length}]`}>
+                {schedulerStatuses.map(item =>
+                    <Dropdown.Item key={item.value} onSelect={i => this.switchStatus(item.value)}>{item.name}</Dropdown.Item>
+                )}
+            </DropdownButton>
+            <div>
+                <ul>
+                    {items
+                        .filter((i, j) => i.index != null && j < limitValue)
+                        .map(i => this.renderStatus(i as Required<IColScheduler>))
+                    }
+                    {items.length > limitValue &&
+                        <Alert variant="warning">
+                            {items.length - limitValue} items are hidden
                     </Alert>
-                }
-            </ul>
-        </div>
-        </>
+                    }
+                </ul>
+            </div>
+        </Container>
     }
 }

@@ -1,17 +1,14 @@
 import React from 'react';
 // import { Collapse, Container, Navbar, NavbarBrand, NavbarToggler, NavItem, NavLink } from 'reactstrap';
-import { Navbar, Container, NavbarBrand, Collapse, NavItem } from 'react-bootstrap';
+import { Navbar, Container, NavbarBrand, Collapse, NavItem, Nav } from 'react-bootstrap';
 import { NavLink } from 'react-router-dom';
 
+import { routes } from "../routes";
 
-interface NavMenuState {
-
-}
-
-export class NavMenu extends React.Component<NavMenuState, any, any> {
+export class NavMenu extends React.Component<any, any, any> {
   static displayName = NavMenu.name;
 
-  constructor (props: any) {
+  constructor(props: any) {
     super(props);
 
     this.toggleNavbar = this.toggleNavbar.bind(this);
@@ -20,33 +17,30 @@ export class NavMenu extends React.Component<NavMenuState, any, any> {
     };
   }
 
-  toggleNavbar () {
+  toggleNavbar() {
     this.setState({
       collapsed: !this.state.collapsed
     });
   }
 
-  render () {
+
+  render() {
     return (
-      
-      <header>
-        <Navbar>
+
+      <header className="mb-2">
+        <Navbar expand="sm" variant="dark" bg="dark">
           <Container>
-            <NavbarBrand href="/">cc.net</NavbarBrand>
-            {/* <NavbarToggler onClick={this.toggleNavbar} className="mr-2" /> */}
-            <Collapse in={true}>
-              <ul className="navbar-nav flex-grow">
-                <NavItem>
-                  <NavLink className="text-dark px-2" to="/">Home</NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink className="text-dark px-2" to="/scheduler">Scheduler</NavLink>
-                </NavItem>
-                <NavItem>
-                  <NavLink className="text-dark px-2" to="/benchmarks">Benchmarks</NavLink>
-                </NavItem>
-              </ul>
-            </Collapse>
+          <NavbarBrand href="/">cc.net</NavbarBrand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+            <Navbar.Collapse id="basic-navbar-naav">
+              <Nav className="ml-auto">
+                {routes.map(i =>
+                  <Nav.Link key={i.href} href={i.href}>
+                    {i.title}
+                  </Nav.Link>
+                )}
+              </Nav>
+            </Navbar.Collapse>
           </Container>
         </Navbar>
       </header>

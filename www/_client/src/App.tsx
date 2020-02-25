@@ -1,11 +1,8 @@
 import React, { Component } from 'react';
 import { Route } from 'react-router';
 import { Layout } from './components/Layout';
-import { Home } from './components/Home';
 
-import { SchedulerList } from './routes/SchedulerList';
-import { BenchmarkView } from './routes/BenchmarkView';
-
+import { routes } from "./routes";
 
 
 export class App extends Component {
@@ -15,9 +12,9 @@ export class App extends Component {
     return (
       <>
         <Layout>
-          <Route exact path='/' component={Home} />
-          <Route path='/scheduler' exact={true} component={SchedulerList} />
-          <Route path='/benchmarks' exact={true} component={BenchmarkView} />
+          {routes.map(i => 
+            <Route key={i.href} exact path={i.href} component={i.component} />
+          )}
         </Layout>
       </>
     );
