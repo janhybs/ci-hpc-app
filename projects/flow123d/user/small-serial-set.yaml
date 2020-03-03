@@ -12,6 +12,7 @@
 - matrix:
     - test:         [ 02_cube_123d ]
     - mesh:         [ 1_15786_el, 2_29365_el ] # [ 4_58803_el, 8_118696_el ]
+    - cpus:         [1]
     - benchmark:
       - flow_bddc.yaml
   #     - flow_bddc_fieldformula.yaml
