@@ -9,7 +9,7 @@
   
   # 02_cube_123d
   # total of 1 * 4 * 9 = 36 cases
-  - matrix:
+- matrix:
     - test:         [ 02_cube_123d ]
     - mesh:         [ 1_15786_el, 2_29365_el ] # [ 4_58803_el, 8_118696_el ]
     - benchmark:
