@@ -1,3 +1,5 @@
+import { IIndexInfo } from "./models/DataModel";
+
 interface HttpClientConfig {
     baseUrl: string;
     headers: { [key: string]: string };
@@ -42,3 +44,36 @@ export const httpClient = new HttpClient({
 });
 
 export const layoutUtils = new LayoutUtils();
+
+
+const cfg = (test, benchmark, mesh, cpus=1): IIndexInfo => {
+    return {
+        project: "flow123d",
+        cpus, test, benchmark, mesh,
+    }
+}
+
+
+export const configurations: IIndexInfo[] = [
+    ...['1_15662_el', '2_31498_el'].map(mesh => 
+        cfg(
+            "01_square_regular_grid",
+            "transport.yaml",
+            mesh
+        ),
+    ),
+    ...['flow_bddc.yaml', 'flow_dg.yaml', 'flow_fv.yaml'].map(benchmark => 
+        cfg(
+            "02_cube_123d",
+            benchmark,
+            "1_15786_el"
+        ),
+    ),
+    ...['flow_bddc.yaml', 'flow_dg.yaml', 'flow_fv.yaml'].map(benchmark => 
+        cfg(
+            "02_cube_123d",
+            benchmark,
+            "2_29365_el"
+        ),
+    ),
+];

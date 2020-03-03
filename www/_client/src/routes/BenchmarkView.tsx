@@ -2,7 +2,7 @@ import React from "react";
 
 import { observer } from "mobx-react"
 import { observable } from "mobx"
-import { httpClient } from "../init";
+import { httpClient, configurations } from "../init";
 import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert } from "react-bootstrap";
@@ -17,7 +17,6 @@ import HighchartsReact from 'highcharts-react-official';
 import Highcharts from 'highcharts/highstock';
 import addHighchartsMore from 'highcharts/highcharts-more';
 import { NotificationApi } from "../utils/Notification";
-import { BarLoader } from "react-spinners";
 import { SimpleLoader } from "../components/SimpleLoader";
 addHighchartsMore(Highcharts);
 
@@ -73,23 +72,6 @@ const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)
 }
 
 
-const configurations: IIndexInfo[] = [
-    {
-        project: "flow123d",
-        test: "01_square_regular_grid",
-        benchmark: "transport.yaml",
-        mesh: "1_15662_el",
-        cpus: 1
-    },
-    {
-        project: "flow123d",
-        test: "01_square_regular_grid",
-        benchmark: "transport.yaml",
-        mesh: "2_31498_el",
-        cpus: 1
-    }
-];
-
 const checkOutliers = (item: ISimpleTimers) => {
     const j = item as Required<ISimpleTimers>;
     const low = j.median - j.low > j.median * outlierCoef;
@@ -136,8 +118,14 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     constructor(state) {
         super(state);
+
+        const match = (this.props as any).match;
+        const index = match ? match.params.index : null;
+
         if (this.props.configuration != null) {
             this.model.configuration = this.props.configuration
+        } else if (index != null) {
+            this.model.configuration = configurations[index];
         }
         this.load();
     }
@@ -219,7 +207,11 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         <DropdownButton id="dropdown-basic-button"
                             title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
                             {configurations.map(item =>
-                                <Dropdown.Item key={this.configurationName(item)} onSelect={i => this.switchConfig(item)}>
+                                <Dropdown.Item
+                                    key={this.configurationName(item)}
+                                    onSelect={i => this.switchConfig(item)}
+                                    active={configurationName === this.configurationName(item)}
+                                >
                                     {this.configurationName(item)}
                                 </Dropdown.Item>
                             )}
@@ -233,6 +225,13 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         title: {
                             text: this.props.hideTitle ? "" : configurationName,
                         },
+                        plotOptions: {
+                            series: {
+                                animation: isSmall ? false : {
+                                    duration: 200,
+                                },
+                            }
+                        },
                         credits: {
                             enabled: false
                         },
@@ -240,11 +239,8 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             enabled: !isSmall,
                         },
                         chart: {
-                            animation: {
-                                duration: 200,
-                            },
                             zoomType: "x",
-                            height: isSmall ? null : "700",
+                            height: isSmall ? "256" : "700",
                             events: {
                                 load: function (ev) {
                                     if (defaultZoom) {

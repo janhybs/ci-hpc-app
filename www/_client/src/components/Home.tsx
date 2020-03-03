@@ -1,24 +1,10 @@
 import React, { Component } from 'react';
 import { BenchmarkView } from '../routes/BenchmarkView';
 import { IIndexInfo } from '../models/DataModel';
+import { configurations } from '../init';
+import { Link } from 'react-router-dom';
 
 
-const configurations: IIndexInfo[] = [
-  {
-    project: "flow123d",
-    test: "01_square_regular_grid",
-    benchmark: "transport.yaml",
-    mesh: "1_15662_el",
-    cpus: 1
-  },
-  {
-    project: "flow123d",
-    test: "01_square_regular_grid",
-    benchmark: "transport.yaml",
-    mesh: "2_31498_el",
-    cpus: 1
-  }
-];
 
 
 export class Home extends Component {
@@ -28,13 +14,15 @@ export class Home extends Component {
     return (
       <div className="row">
         {configurations.map((configuration, i) =>
-          <div key={i} className="chart-wrapper col col-lg-6">
+          <div key={i} className="chart-wrapper col col-lg-4">
             <div className="chart-inner">
-              <BenchmarkView
-                size="small" configuration={configuration}
-                simple
-                hideXTicks
-              />
+              <Link to={`/benchmarks/${i}`}>
+                <BenchmarkView
+                  size="small" configuration={configuration}
+                  simple
+                  hideXTicks
+                />
+              </Link>
             </div>
           </div>
         )}

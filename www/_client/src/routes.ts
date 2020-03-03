@@ -7,10 +7,11 @@ export interface IRoute {
     title: string;
     href: string;
     component: any;
+    path?: any;
 }
 
-export const routes = [
+export const routes: IRoute[] = [
     { title: "Home", href: "/", component: Home },
     { title: "Scheduler", href: "/scheduler", component: SchedulerList },
-    { title: "Benchmarks", href: "/benchmarks", component: BenchmarkView },
+    { title: "Benchmarks", href: "/benchmarks/0", component: BenchmarkView, path: "/benchmarks/:index" },
 ];
