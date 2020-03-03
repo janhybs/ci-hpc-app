@@ -33,7 +33,7 @@ class SchedulerListModel {
 
     @observable
     public filter: ISchedulerFilter = {
-        limit: 1000,
+        limit: 10*1000,
         status: ColSchedulerStatus.NotProcessed as any,
     }
 }
