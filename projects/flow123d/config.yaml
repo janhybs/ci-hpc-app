@@ -7,7 +7,7 @@ git:
 
 steps:
   - name: compile
-    retries: 1
+    retries: 2
     stdout: true
     runs: !readfile utils/install.sh
     cache:
@@ -15,6 +15,7 @@ steps:
       - build-<git.branch>
 
   - name: test
+    retries: 2
     stdout: true
     variables: !readyaml user/small-serial-set.yaml
     runs: !readfile  utils/runtest.sh
