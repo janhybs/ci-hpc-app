@@ -15,7 +15,7 @@ steps:
       - build-<git.branch>
 
   - name: test
-    retries: 2
+    retries: 3
     stdout: true
     variables: !readyaml user/small-serial-set.yaml
     runs: !readfile  utils/runtest.sh
