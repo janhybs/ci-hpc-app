@@ -28,7 +28,11 @@ namespace CC.Net.Services
 
         public IEnumerable<ColRepoInfo> GetAll(DateTime minDateTime)
         {
-            var items = _repoInfo.Find(i => i.CommittedDatetime > minDateTime).ToEnumerable();
+            var items = _repoInfo
+                .Find(i => i.CommittedDatetime > minDateTime)
+                .SortBy(i => i.CommittedDatetime)
+                .ToEnumerable();
+
             foreach (var item in items)
             {
                 _cache[item.Commit] = item;

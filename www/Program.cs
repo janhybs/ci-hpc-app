@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using cc.net.Collections.Shared;
 using CC.Net.Collections;
 using CC.Net.Dto;
+using CC.Net.Extensions;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -34,11 +36,11 @@ namespace CC.Net
                         .WithMemberTypeFormatter(MemberTypeFormatter)
                         .WithModuleNameFormatter((moduleName) => "")
                         .WithMemberFormatter((identifier) => 
-                            Char.ToLower(identifier.Name[0]) + identifier.Name.Substring(1) + "?"
+                            Char.ToLower(identifier.Name[0]) + identifier.Name.Substring(1)
                         )
-                        .WithTypeFormatter((type, f) => "I" + ((TypeLite.TsModels.TsClass)type).Name)
+                        .WithTypeFormatter((type, f) => "I" + ((TsClass)type).Name)
                         .Generate());
-                System.Environment.Exit(0);
+                Environment.Exit(0);
             }
 
             CreateWebHostBuilder(args)

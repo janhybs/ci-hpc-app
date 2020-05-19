@@ -29,8 +29,8 @@ namespace cc.net.Collections.Shared
         [BsonElement("mesh")]
         public string Mesh { get; set; }
 
-        [BsonElement("cpus")]
-        public int? Cpus { get; set; }
+        // [BsonElement("cpus")]
+        // public object Cpus { get; set; }
 
         [BsonElement("frame")]
         public string Frame { get; set; }
@@ -41,11 +41,11 @@ namespace cc.net.Collections.Shared
         [BsonElement("host")]
         public object Host { get; set; }
 
-        [BsonElement("mesh_cpus")]
-        public object MeshCpus { get; set; }
+        // [BsonElement("mesh_cpus")]
+        // public object MeshCpus { get; set; }
 
-        [BsonElement("mesh_size")]
-        public object MeshSize { get; set; }
+        // [BsonElement("mesh_size")]
+        // public object MeshSize { get; set; }
 
     }
 }

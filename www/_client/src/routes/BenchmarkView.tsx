@@ -32,8 +32,16 @@ const outlierCoef = 0.25;
 const maxCommitByDefault = 30;
 
 interface IOutlier {
-    x?: string;
-    y?: number;
+    x: string;
+    y: number;
+}
+
+const getColor = (point: ISimpleTimers) => {
+    return point.isBroken
+        ? "gray"
+        : (point.welch !== null && point.welch.significant
+            ? (point.welch.estimatedValue1 < point.welch.estimatedValue2 ? "green" : "red")
+            : null);
 }
 
 const filterBranches = (branches: string[]) =>
@@ -47,8 +55,12 @@ class Prop {
     public prop(o: any) {
         const keys = this.key.split(".");
         let c = o;
-        keys.forEach(i => c = c[i]);
-        return c;
+        try {
+            keys.forEach(i => c = c[i]);
+            return c;
+        } catch (error) {
+            return null;
+        }
     }
 }
 
@@ -62,11 +74,11 @@ const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)
         </code>
         <dl class="boxplot">
             ${props.map(p => {
-            const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
-            const value = prop.format(prop.prop(point) || NaN);
-            return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
-        }).join("")
-            }
+        const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
+        const value = prop.format(prop.prop(point) || NaN);
+        return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
+    }).join("")
+        }
         <dl>
     </div>`
 }
@@ -81,12 +93,13 @@ const checkOutliers = (item: ISimpleTimers) => {
 
 interface BenchmarkViewState {
     model: BenchmarkViewModel;
+    foo: number;
 }
 
 class BenchmarkViewModel {
 
     @observable
-    public configuration: IIndexInfo = configurations[0];
+    public configuration: IIndexInfo = configurations[0] as IIndexInfo;
 
     @observable
     public items: ISimpleTimers[] = [];
@@ -94,8 +107,8 @@ class BenchmarkViewModel {
     public get filter(): ITimersFilter {
         return {
             info: this.configuration,
-            limit: 500,
-        };
+            limit: 5000,
+        } as ITimersFilter;
     }
 }
 
@@ -105,6 +118,8 @@ export interface BenchmarkViewProps {
     hideXTicks?: boolean;
     configuration?: IIndexInfo;
     size?: "big" | "small";
+
+    hideBroken?: boolean
 }
 
 @observer
@@ -116,6 +131,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     private data: any[] = []
     private outliers: IOutlier[] = [];
 
+    @observable
+    private ratio: number = NaN;
+
+    @observable
+    private showBroken = false;
+
     constructor(state) {
         super(state);
 
@@ -125,24 +146,34 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         if (this.props.configuration != null) {
             this.model.configuration = this.props.configuration
         } else if (index != null) {
-            this.model.configuration = configurations[index];
+            this.model.configuration = configurations[index] as IIndexInfo;
         }
         this.load();
     }
 
     load() {
         httpClient.fetch<ISimpleTimers[]>("timers/list", this.model.filter)
-            .then((json: ISimpleTimers[]) => {
+            .then((json: any) => {
 
-                const sortedData = json.sort((b, a) => {
+                let rawData = json.data as ISimpleTimers[];
+                this.ratio = json.ratio;
+
+                if (this.props.hideBroken === true) {
+                    rawData = rawData
+                        .filter(i => i.isBroken === false);
+                }
+
+                /*const sortedData = rawData.sort((b, a) => {
                     const dateB = b.info ? new Date(b.info.date as any).getTime() : 0;
                     const dateA = a.info ? new Date(a.info.date as any).getTime() : 0;
                     return dateB - dateA;
-                });
-                const { data, outliers } = this.fixData(sortedData);
+                });*/
+
+                const { data, outliers } = this.fixData(rawData);
 
                 this.data = data;
                 this.outliers = outliers
+                // this.setState({foo: Math.random()});
 
                 this.model.items = data;
 
@@ -156,7 +187,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     }
 
     configurationName(item: IIndexInfo) {
-        return `${item.cpus} x ${item.test} ${item.benchmark} ${item.mesh}`;
+        return `${item.test} ${item.benchmark} ${item.mesh}`;
     }
 
     fixData(items: ISimpleTimers[]) {
@@ -182,20 +213,28 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     render() {
         const configurationName = this.configurationName(this.model.configuration);
-        const commits = new Map(this.model.items.map((c, i) => [c.commit, i]));
-        const commitInfo = new Map(this.model.items.map(c => [c.commit, c.info]));
+        const { data: dataRaw, outliers } = this;
+        const data = this.model.items
+            .filter(i => !i.isBroken || this.showBroken) as any[];
+
+        const itemsRaw = data as ISimpleTimers[];
+
+        const commits = new Map(itemsRaw.map((c, i) => [c.commit, i]));
+        const commitInfo = new Map(itemsRaw.map(c => [c.commit, c.info]));
         const xLabels = [...commits.keys()] as string[];
-        const { data, outliers } = this;
 
         const isSmall = this.props.size === "small";
         const boxplotVisible = !isSmall,
             medianVisible = isSmall,
             outliersVisible = false,
             defaultZoom = !isSmall;
-        
+
         if (data.length === 0) {
             return <SimpleLoader />
         }
+
+        const title = this.props.hideTitle ? ""
+            : `${configurationName}<br /><small>(${(this.ratio * 100).toFixed(2)} % working)</small>`;
 
         return <>
             {!this.props.simple &&
@@ -217,16 +256,20 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             )}
                         </DropdownButton>
                     </ButtonGroup>
+                    <Button onClick={() => this.showBroken = !this.showBroken}>
+                        Toggle broken builds
+                    </Button>
                 </ButtonToolbar>
             }
             {xLabels.length > 0 &&
                 <div>
                     <HighchartsReact highcharts={Highcharts} options={{
                         title: {
-                            text: this.props.hideTitle ? "" : configurationName,
+                            text: title,
                         },
                         plotOptions: {
                             series: {
+                                turboThreshold: 0,
                                 animation: isSmall ? false : {
                                     duration: 200,
                                 },
@@ -265,11 +308,10 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             },
                             tickInterval: 1,
                             labels: {
+                                enabled: !this.props.hideXTicks,
                                 style: {
                                     fontSize: "9px"
                                 },
-                                // useHTML: true,
-                                enabled: !this.props.hideXTicks,
                                 formatter: function () {
                                     try {
                                         const info = commitInfo.get(xLabels[this.value]);
@@ -296,12 +338,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                     return {
                                         y: i.median as number,
                                         x: commits.get(i.commit),
-                                        color: i.isBroken ? "red" : null
+                                        color: getColor(i as ISimpleTimers)
                                     } as any;
                                 }),
                                 enableMouseTracking: medianVisible,
                                 lineWidth: 1,
-                                dashStyle:  isSmall ? "Solid" : "ShortDot",
+                                dashStyle: isSmall ? "Solid" : "ShortDot",
                                 marker: {
                                     enabled: isSmall,
                                     radius: 4,
@@ -338,6 +380,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                             new Prop("count", "N", i => i.toFixed()),
                                             new Prop("info.branch", "Branch", noFormat),
                                             new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
+                                            new Prop("welch.estimatedValue1", "x1", (i: number) => i == null ? "" : i.toFixed(2)),
+                                            new Prop("welch.estimatedValue2", "x2", (i: number) => i == null ? "" : i.toFixed(2)),
+                                            new Prop("welch.radius", "r", (i: number) => i == null ? "" : i),
+                                            new Prop("welch.n1", "n1", (i: number) => i == null ? "" : i),
+                                            new Prop("welch.n2", "n2", (i: number) => i == null ? "" : i),
+                                            new Prop("fooo", " ", (i: any) => "<br />"),
                                             "count",
                                             "low",
                                             "q1",
@@ -351,7 +399,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                     return {
                                         ...i,
                                         x: commits.get(i.commit),
-                                        color: i.isBroken ? "red" : null
+                                        color: getColor(i as ISimpleTimers)
                                     };
                                 })
                             },

@@ -8,6 +8,7 @@ using CC.Net.Db;
 using CC.Net.Dto;
 using CC.Net.Extensions;
 using CC.Net.Services;
+using CC.Net.Stats;
 using CC.Net.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -39,6 +40,7 @@ namespace CC.Net.Controllers
             _indexInfo = dbService.CachedColIndexInfo;
         }
 
+
         [HttpPost]
         [Route("list")]
         public object ActionList(TimersFilter filter)
@@ -56,74 +58,110 @@ namespace CC.Net.Controllers
             //             }
             //         }
             //     ]}";
-            var items = _dbService.ColTimers
-                .Find(i =>
-                    i.Index.Project == filter.info.Project
-                    && i.Index.Test == filter.info.Test
-                    && i.Index.Mesh == filter.info.Mesh
-                    && i.Index.Benchmark == filter.info.Benchmark
-                    && i.Index.Cpus == filter.info.Cpus
-                    && i.Index.Frame == "whole-program"
-                )
-                .Sort(Builders<ColTimers>.Sort.Descending("_id"))
-                .Limit(filter.limit)
-                .SortBy(i => i.Id)
-                .Project(i => new SimpleTimer
-                {
-                    objectId = i.objectId,
-                    Commit = i.Index.Commit,
-                    Branch = i.Index.Branch,
-                    Duration = i.Result.Duration,
-                })
-                .ToList()
-                .GroupBy(
-                    i => i.Commit,
-                    (k, i) => new SimpleTimers
-                    {
-                        Commit = k,
-                        Info = GitInfo.From(_repoInfo[k]),
-                        Branch = i.First().Branch,
-                        Durations = i.Select(j => j.Duration)
-                            .OrderBy(i => i)
-                            .ToArray()
-                    }
-                )
-                .ToList();
-                // .Prepend(new SimpleTimers()
-                // {
-                //     Commit = "aaa",
-                //     Branch = "none",
-                //     Info = GitInfo.Empty(),
-                //     Durations = new double[] { 0, 0, 0 }
-                // });
 
-            var cmts = _repoInfo
-                .GetAll(90)
-                .Where(i => _indexInfo
-                    .GetDocument(i.Commit, () => FindByCommit(i.Commit))
-                    ?.Run?.IsBroken == true)
-                .ToList();
-            
-            items.AddRange(
-                cmts.Select(i => 
-                    new SimpleTimers(){
+            var commits = _repoInfo.GetAll(365 * 1).ToList();
+            var minId = filter.days.AsPastObjectId();
+            var result = commits
+                .Select(i =>
+                    new SimpleTimers()
+                    {
                         Commit = i.Commit,
                         Branch = i.Branch,
                         Info = GitInfo.From(i),
                         isBroken = true,
                         Durations = new double[] { 0, 0, 0 }
                     })
-            );
+                .ToList();
 
+            var dbItems = _dbService.ColTimers
+                .Find(i =>
+                    i.Index.Project == filter.info.Project
+                    && i.Index.Test == filter.info.Test
+                    && i.Index.Mesh == filter.info.Mesh
+                    && i.Index.Benchmark == filter.info.Benchmark
+                    && i.Index.Frame == "whole-program"
+                    && i.Id > minId
+                )
+                .Sort(Builders<ColTimers>.Sort.Descending("_id"));
 
-            return items;
-        }
+            var simple = dbItems
+                .Project(i =>
+                new
+                {
+                    i.Index.Commit,
+                    i.Result.Duration
+                })
+                .ToList()
+                .GroupBy(i => i.Commit, i => i.Duration);
 
-        private ColIndexInfo FindByCommit(string commit)
-        {
-            return _indexInfo.Collection
-                .Find(i => i.Index.Commit == commit && i.Index.Job == "compile")
-                .FirstOrDefault();
+            var cmts = simple.Select(i => i.Key).ToList();
+
+            foreach(var s in simple)
+            {
+                var singleResult = result.FirstOrDefault(i => i.Commit == s.Key);
+                if(singleResult != null)
+                {
+                    singleResult.isBroken = false;
+                    singleResult.Durations = s.ToArray();
+                }
+            }
+
+            var ratio = result.Count(i => !i.isBroken) / ((double)result.Count());
+
+            result = result
+                .OrderBy(i => i.Info.Date)
+                .ToList();
+
+            var firstValid = result.FindIndex(i => i.isBroken == false);
+            if(firstValid != -1)
+            {
+                result = result
+                    .Skip(firstValid)
+                    .ToList();
+            }
+
+            var notBroken = result.Where(i => !i.isBroken).ToList();
+            for(var i = 10; i < notBroken.Count() - 10; i++)
+            {
+                if(notBroken[i].Commit == "382e3b96b3067ff5a132c28e64a89d0990a864c5")
+                {
+                    Console.WriteLine(notBroken[i]);
+                }
+
+                // we run ttest
+                var a = notBroken.Durations(i + 1, +10);
+                var b = notBroken.Durations(i + 0, -10);
+                var r = Welch.TTest(a, b, 10);
+                notBroken[i].Welch = r;
+
+                // in case we detect some change, we'll try to "zoom in"
+                if (r.Significant)
+                {
+                    for (var j = 9; j > 1; j--)
+                    {
+                        var aj = notBroken.Durations(i + 0, +j);
+                        var bj = notBroken.Durations(i - 1, -j);
+
+                        // until we still detect change
+                        // and there is atleast 20 samples
+                        if (aj.Length > 30 && bj.Length > 30)
+                        {
+                            var rj = Welch.TTest(aj, bj, j);
+                            notBroken[i].Welch = rj;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                }
+
+            }
+
+            return new {
+                Data = result,
+                Ratio = ratio
+            };
         }
     }
 }

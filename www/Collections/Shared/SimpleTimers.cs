@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
 using CC.Net.Services;
+using CC.Net.Stats;
 using NumSharp;
 
 namespace cc.net.Collections.Shared
@@ -19,6 +20,8 @@ namespace cc.net.Collections.Shared
         public double[] Durations { get; set; }
 
         public int Count => Durations.Length;
+
+        public Welch Welch { get; set; }
 
         public double Median
         {
