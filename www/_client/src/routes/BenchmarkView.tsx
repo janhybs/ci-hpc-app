@@ -29,7 +29,7 @@ const defaultFormat = (i: any) => i.toFixed(2);
 const noFormat = i => i;
 const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
 const outlierCoef = 0.25;
-const maxCommitByDefault = 30;
+const maxCommitByDefault = 100;
 
 interface IOutlier {
     x: string;
@@ -245,10 +245,13 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         </Button>
                         <DropdownButton id="dropdown-basic-button"
                             title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
-                            {configurations.map(item =>
+                            {configurations.map((item, j) =>
                                 <Dropdown.Item
                                     key={this.configurationName(item)}
-                                    onSelect={i => this.switchConfig(item)}
+                                    onSelect={i => {
+                                        this.switchConfig(item);
+                                        (this.props as any).history.push(`/benchmarks/${j}`);
+                                    }}
                                     active={configurationName === this.configurationName(item)}
                                 >
                                     {this.configurationName(item)}
@@ -330,44 +333,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         },
                         series: [
                             {
-                                type: "area",
-                                name: "Median",
-                                visible: medianVisible,
-                                stickyTracking: medianVisible,
-                                data: data.map(i => {
-                                    return {
-                                        y: i.median as number,
-                                        x: commits.get(i.commit),
-                                        color: getColor(i as ISimpleTimers)
-                                    } as any;
-                                }),
-                                enableMouseTracking: medianVisible,
-                                lineWidth: 1,
-                                dashStyle: isSmall ? "Solid" : "ShortDot",
-                                marker: {
-                                    enabled: isSmall,
-                                    radius: 4,
-                                },
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
-                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
-                                    ]
-                                },
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
-                                    }
-                                }
-                            },
-                            {
                                 type: "boxplot",
                                 name: "Boxplot",
                                 visible: boxplotVisible,
@@ -402,6 +367,82 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                         color: getColor(i as ISimpleTimers)
                                     };
                                 })
+                            },
+                            {
+                                type: "area",
+                                name: "Median",
+                                visible: medianVisible,
+                                stickyTracking: !isSmall,
+                                data: data.map(i => {
+                                    return {
+                                        y: i.median as number,
+                                        x: commits.get(i.commit),
+                                        color: getColor(i as ISimpleTimers)
+                                    } as any;
+                                }),
+                                enableMouseTracking: medianVisible,
+                                lineWidth: 1,
+                                dashStyle: isSmall ? "Solid" : "ShortDot",
+                                marker: {
+                                    enabled: isSmall,
+                                    radius: 4,
+                                },
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
+                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
+                                    ]
+                                },
+                                tooltip: {
+                                    headerFormat: "",
+                                    pointFormatter: function () {
+                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
+                                    }
+                                }
+                            },
+                            {
+                                type: "area",
+                                name: "Low",
+                                visible: false,
+                                stickyTracking: !false,
+                                data: data.map(i => {
+                                    return {
+                                        y: i.low as number,
+                                        x: commits.get(i.commit),
+                                        color: getColor(i as ISimpleTimers)
+                                    } as any;
+                                }),
+                                enableMouseTracking: false,
+                                lineWidth: 1,
+                                dashStyle: isSmall ? "Solid" : "ShortDot",
+                                marker: {
+                                    enabled: isSmall,
+                                    radius: 4,
+                                },
+                                fillColor: {
+                                    linearGradient: {
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 0,
+                                        y2: 1
+                                    },
+                                    stops: [
+                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
+                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
+                                    ]
+                                },
+                                tooltip: {
+                                    headerFormat: "",
+                                    pointFormatter: function () {
+                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
+                                    }
+                                }
                             },
                             {
                                 type: "scatter",

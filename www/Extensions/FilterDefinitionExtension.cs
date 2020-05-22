@@ -48,8 +48,16 @@ namespace CC.Net.Extensions
             return new List<T>();
         }
 
-        public static double[] Durations(this List<SimpleTimers> lst, int i, int size)
+        public static double[] Durations(this List<SimpleTimers> lst, int i, int size, bool onlyMin=false)
         {
+            if(onlyMin)
+            {
+                return lst
+                    .Range(i, size)
+                    .Select(i => i.Durations.Min())
+                    .ToArray();
+            }
+
             return lst
                 .Range(i, size)
                 .SelectMany(i => i.Durations)

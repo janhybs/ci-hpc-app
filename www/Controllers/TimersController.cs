@@ -119,18 +119,19 @@ namespace CC.Net.Controllers
                     .Skip(firstValid)
                     .ToList();
             }
-
+            var onlyMin = false;
+            var minTimers = onlyMin ? 4 : 30;
             var notBroken = result.Where(i => !i.isBroken).ToList();
             for(var i = 10; i < notBroken.Count() - 10; i++)
             {
-                if(notBroken[i].Commit == "382e3b96b3067ff5a132c28e64a89d0990a864c5")
+                if(notBroken[i].Commit == "cab65c4dd7157b4b9e918217e62377a60612be3b")
                 {
                     Console.WriteLine(notBroken[i]);
                 }
 
                 // we run ttest
-                var a = notBroken.Durations(i + 1, +10);
-                var b = notBroken.Durations(i + 0, -10);
+                var a = notBroken.Durations(i + 1, +10, onlyMin);
+                var b = notBroken.Durations(i + 0, -10, onlyMin);
                 var r = Welch.TTest(a, b, 10);
                 notBroken[i].Welch = r;
 
@@ -139,12 +140,12 @@ namespace CC.Net.Controllers
                 {
                     for (var j = 9; j > 1; j--)
                     {
-                        var aj = notBroken.Durations(i + 0, +j);
-                        var bj = notBroken.Durations(i - 1, -j);
+                        var aj = notBroken.Durations(i + 0, +j, onlyMin);
+                        var bj = notBroken.Durations(i - 1, -j, onlyMin);
 
                         // until we still detect change
                         // and there is atleast 20 samples
-                        if (aj.Length > 30 && bj.Length > 30)
+                        if (aj.Length > minTimers && bj.Length > minTimers)
                         {
                             var rj = Welch.TTest(aj, bj, j);
                             notBroken[i].Welch = rj;

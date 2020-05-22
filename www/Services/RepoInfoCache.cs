@@ -36,8 +36,9 @@ namespace CC.Net.Services
             foreach (var item in items)
             {
                 _cache[item.Commit] = item;
-                yield return item;
+                // yield return item;
             }
+            return items;
         }
 
         public ColRepoInfo this[string index]
