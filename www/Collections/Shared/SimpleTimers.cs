@@ -1,14 +1,23 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using CC.Net.Collections;
 using CC.Net.Services;
 using CC.Net.Stats;
-using NumSharp;
 
 namespace cc.net.Collections.Shared
 {
     public class SimpleTimers
     {
+        [JsonIgnore]
+        public ColRepoInfo CommitInfo { get; }
+
+        public SimpleTimers() { }
+        public SimpleTimers(ColRepoInfo commitInfo)
+        {
+            CommitInfo = commitInfo;
+        }
+
         public string Commit { get; set; }
         public string Branch { get; set; }
 
@@ -55,5 +64,8 @@ namespace cc.net.Collections.Shared
         public double Low => Durations.Min();
 
         public double High => Durations.Max();
+
+        public List<string> Left { get; set; }
+        public List<string> Right { get; set; }
     }
 }

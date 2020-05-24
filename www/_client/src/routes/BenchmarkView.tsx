@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observer } from "mobx-react"
-import { observable } from "mobx"
+import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
 import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
@@ -75,7 +75,7 @@ const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)
         <dl class="boxplot">
             ${props.map(p => {
         const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
-        const value = prop.format(prop.prop(point) || NaN);
+        const value = prop.format(prop.prop(point) || null);
         return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
     }).join("")
         }
@@ -137,6 +137,14 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     private showBroken = false;
 
+    @observable
+    private showTooltip = false;
+
+    @observable
+    private commitFilter: string[] = [];
+
+    private commitDetail?: ISimpleTimers;
+
     constructor(state) {
         super(state);
 
@@ -149,6 +157,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             this.model.configuration = configurations[index] as IIndexInfo;
         }
         this.load();
+        window.addEventListener("keydown", e => this.handleKeyDown(e));
     }
 
     load() {
@@ -211,13 +220,23 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         return { data, outliers };
     }
 
+    @action.bound
+    handleKeyDown(e: KeyboardEvent) {
+        if(e.key === "Shift")
+        {
+            this.showTooltip = !this.showTooltip;
+        }
+    }
+
     render() {
         const configurationName = this.configurationName(this.model.configuration);
-        const { data: dataRaw, outliers } = this;
+        const { data: dataRaw, outliers, commitFilter } = this;
         const data = this.model.items
-            .filter(i => !i.isBroken || this.showBroken) as any[];
+            .filter(i => !i.isBroken || this.showBroken)
+            .filter(i => commitFilter.length == 0 ? true : commitFilter.indexOf(i.commit) >= 0) as any[];
 
         const itemsRaw = data as ISimpleTimers[];
+        const self = this;
 
         const commits = new Map(itemsRaw.map((c, i) => [c.commit, i]));
         const commitInfo = new Map(itemsRaw.map(c => [c.commit, c.info]));
@@ -265,7 +284,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                 </ButtonToolbar>
             }
             {xLabels.length > 0 &&
-                <div>
+                <div className={`${this.showTooltip ? "" : "no-tooltip"}`}>
                     <HighchartsReact highcharts={Highcharts} options={{
                         title: {
                             text: title,
@@ -288,6 +307,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             zoomType: "x",
                             height: isSmall ? "256" : "700",
                             events: {
+                                click: function(e) {
+                                    //console.log(e)
+                                },
                                 load: function (ev) {
                                     if (defaultZoom) {
                                         const chart = this as any;
@@ -333,11 +355,30 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         },
                         series: [
                             {
+                                allowPointSelect: true,
                                 type: "boxplot",
                                 name: "Boxplot",
                                 visible: boxplotVisible,
                                 stickyTracking: false,
                                 color: (Highcharts as any).getOptions().colors[0],
+                                point: {
+                                    events: {
+                                        click: function(e) {
+                                            const item = this as any as ISimpleTimers;
+                                            if (self.commitDetail === item)
+                                            {
+                                                self.commitFilter = [];
+                                                return;
+                                            }
+
+                                            self.commitFilter = [
+                                                ...(item.left || []),
+                                                ...(item.right || []),
+                                            ]
+                                            self.commitDetail = item;
+                                        }
+                                    }
+                                },
                                 tooltip: {
                                     headerFormat: "",
                                     pointFormatter: function () {
@@ -345,12 +386,15 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                             new Prop("count", "N", i => i.toFixed()),
                                             new Prop("info.branch", "Branch", noFormat),
                                             new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
+                                            new Prop("welch.pValue", "pValue", (i: number) => i == null ? "" : i.toFixed(3)),
                                             new Prop("welch.estimatedValue1", "x1", (i: number) => i == null ? "" : i.toFixed(2)),
                                             new Prop("welch.estimatedValue2", "x2", (i: number) => i == null ? "" : i.toFixed(2)),
                                             new Prop("welch.radius", "r", (i: number) => i == null ? "" : i),
                                             new Prop("welch.n1", "n1", (i: number) => i == null ? "" : i),
                                             new Prop("welch.n2", "n2", (i: number) => i == null ? "" : i),
-                                            new Prop("fooo", " ", (i: any) => "<br />"),
+                                            new Prop("left", "left", (i: string[]) => i == null ? "" : i.join(', ')),
+                                            new Prop("right", "right", (i: string[]) => i == null ? "" : i.join(', ')),
+                                            new Prop("fooo", " ", (i: any) => "-----------------<br />"),
                                             "count",
                                             "low",
                                             "q1",

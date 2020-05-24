@@ -20,7 +20,7 @@ namespace CC.Net.Stats
 
         public override string ToString()
         {
-            return $"{Significant}([{Radius}] p={PValue:0.00}, df={DegreesOfFreedom:0.00}, cv={CriticalValue:0.00})";
+            return $"{Significant}([{Radius}] p={PValue:0.0000}, df={DegreesOfFreedom:0.00}, cv={CriticalValue:0.00})";
         }
 
         public static Welch TTest(double[] x, double[] y, int radius)

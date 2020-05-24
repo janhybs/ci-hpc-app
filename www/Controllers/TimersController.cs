@@ -63,7 +63,7 @@ namespace CC.Net.Controllers
             var minId = filter.days.AsPastObjectId();
             var result = commits
                 .Select(i =>
-                    new SimpleTimers()
+                    new SimpleTimers(i)
                     {
                         Commit = i.Commit,
                         Branch = i.Branch,
@@ -124,30 +124,45 @@ namespace CC.Net.Controllers
             var notBroken = result.Where(i => !i.isBroken).ToList();
             for(var i = 10; i < notBroken.Count() - 10; i++)
             {
-                if(notBroken[i].Commit == "cab65c4dd7157b4b9e918217e62377a60612be3b")
+                if(notBroken[i].Commit == "1943bc6cf08ac7d04caebc93c15d402fd62ca74d")
                 {
                     Console.WriteLine(notBroken[i]);
                 }
 
                 // we run ttest
-                var a = notBroken.Durations(i + 1, +10, onlyMin);
-                var b = notBroken.Durations(i + 0, -10, onlyMin);
-                var r = Welch.TTest(a, b, 10);
-                notBroken[i].Welch = r;
+                var commitPrev = notBroken.Commits(_repoInfo, i, -10);
+                var commitNext = notBroken.Commits(_repoInfo, i, +10);
+                var a = commitPrev.Durations(0, 10); //notBroken.Durations(i + 1, +10);
+                var b = commitNext.Durations(0, 10); //notBroken.Durations(i + 0, -10);
+                var r = (Welch)null;
+                if (a.Length > minTimers && b.Length > minTimers)
+                {
+                    r = Welch.TTest(b, a, 10);
+                    notBroken[i].Left = commitPrev.Select(i => i.Commit).Reverse().ToList();
+                    notBroken[i].Right = commitNext.Select(i => i.Commit).ToList();
+                    notBroken[i].Welch = r;
+                }
+                else
+                {
+                    continue;
+                }
+                
 
                 // in case we detect some change, we'll try to "zoom in"
                 if (r.Significant)
                 {
                     for (var j = 9; j > 1; j--)
                     {
-                        var aj = notBroken.Durations(i + 0, +j, onlyMin);
-                        var bj = notBroken.Durations(i - 1, -j, onlyMin);
+                        var aj = commitPrev.Durations(0, j); //notBroken.Durations(i + 0, +j);
+                        var bj = commitNext.Durations(0, j); //notBroken.Durations(i - 1, -j);
 
                         // until we still detect change
                         // and there is atleast 20 samples
                         if (aj.Length > minTimers && bj.Length > minTimers)
                         {
-                            var rj = Welch.TTest(aj, bj, j);
+                            var rj = Welch.TTest(bj, aj, j);
+                            notBroken[i].Left = commitPrev.Take(j).Select(i => i.Commit).Reverse().ToList();
+                            notBroken[i].Right = commitNext.Take(j).Select(i => i.Commit).ToList();
                             notBroken[i].Welch = rj;
                         }
                         else

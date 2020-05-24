@@ -4,6 +4,21 @@
 		Running = 20,
 		Processed = 30
 	}
+	export interface IColRepoInfo {
+		author: string;
+		authoredDatetime: Date;
+		branch: string;
+		branches: string[];
+		children: string[];
+		commit: string;
+		committedDatetime: Date;
+		distance: number;
+		email: string;
+		id: IObjectId;
+		message: string;
+		objectId: string;
+		parents: string[];
+	}
 	export interface IColScheduler {
 		details: IColSchedulerDetails;
 		id: IObjectId;
@@ -66,15 +81,18 @@
 	export interface ISimpleTimers {
 		branch: string;
 		commit: string;
+		commitInfo: IColRepoInfo;
 		count: number;
 		durations: number[];
 		high: number;
 		info: IGitInfo;
 		isBroken: boolean;
+		left: string[];
 		low: number;
 		median: number;
 		q1: number;
 		q3: number;
+		right: string[];
 		welch: IWelch;
 	}
 	export interface IGitInfo {
