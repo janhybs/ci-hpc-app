@@ -5,7 +5,7 @@ import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
 import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
-import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert } from "react-bootstrap";
+import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRedo } from '@fortawesome/free-solid-svg-icons'
 import Color from "color"
@@ -18,6 +18,11 @@ import Highcharts from 'highcharts/highstock';
 import addHighchartsMore from 'highcharts/highcharts-more';
 import { NotificationApi } from "../utils/Notification";
 import { SimpleLoader } from "../components/SimpleLoader";
+import { getOptions, registerOptions } from "./BenchmarkView.Options";
+import { BenchmarkViewModel, getConfigurationName, trimSha } from "./BenchmarkView.Model";
+import { BenchmarkViewChart, DD } from "./BenchmarkView.Chart";
+import { Col } from "reactstrap";
+import { RenderStats } from "./BenchmarView.Stats";
 addHighchartsMore(Highcharts);
 
 
@@ -96,21 +101,6 @@ interface BenchmarkViewState {
     foo: number;
 }
 
-class BenchmarkViewModel {
-
-    @observable
-    public configuration: IIndexInfo = configurations[0] as IIndexInfo;
-
-    @observable
-    public items: ISimpleTimers[] = [];
-
-    public get filter(): ITimersFilter {
-        return {
-            info: this.configuration,
-            limit: 5000,
-        } as ITimersFilter;
-    }
-}
 
 export interface BenchmarkViewProps {
     simple?: boolean;
@@ -143,7 +133,10 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     private commitFilter: string[] = [];
 
-    private commitDetail?: ISimpleTimers;
+    @observable
+    private timerLocked: boolean = false;
+
+    private setTimer: any;
 
     constructor(state) {
         super(state);
@@ -180,12 +173,13 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
                 const { data, outliers } = this.fixData(rawData);
 
-                this.data = data;
-                this.outliers = outliers
-                // this.setState({foo: Math.random()});
+                //this.data = data;
+                //this.outliers = outliers
 
                 this.model.items = data;
+                this.model.ratio = json.ratio;
 
+                this.setState({ foo: Math.random() });
                 NotificationApi.success('Data loaded', "", 1000);
             });
     }
@@ -193,10 +187,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     switchConfig(item: IIndexInfo) {
         this.model.configuration = item;
         this.load();
-    }
-
-    configurationName(item: IIndexInfo) {
-        return `${item.test} ${item.benchmark} ${item.mesh}`;
     }
 
     fixData(items: ISimpleTimers[]) {
@@ -222,41 +212,119 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     @action.bound
     handleKeyDown(e: KeyboardEvent) {
-        if(e.key === "Shift")
-        {
+        if (e.key === "Shift") {
             this.showTooltip = !this.showTooltip;
         }
     }
 
     render() {
-        const configurationName = this.configurationName(this.model.configuration);
-        const { data: dataRaw, outliers, commitFilter } = this;
-        const data = this.model.items
-            .filter(i => !i.isBroken || this.showBroken)
-            .filter(i => commitFilter.length == 0 ? true : commitFilter.indexOf(i.commit) >= 0) as any[];
+        const { commitFilter, model, showBroken } = this;
+        const configurationName = getConfigurationName(model.configuration);
+        const { size, simple, hideTitle } = this.props;
+        const isSmall = size === "small";
+        const isSimple = simple === true;
+        const data = model.items;
 
-        const itemsRaw = data as ISimpleTimers[];
-        const self = this;
-
-        const commits = new Map(itemsRaw.map((c, i) => [c.commit, i]));
-        const commitInfo = new Map(itemsRaw.map(c => [c.commit, c.info]));
-        const xLabels = [...commits.keys()] as string[];
-
-        const isSmall = this.props.size === "small";
-        const boxplotVisible = !isSmall,
-            medianVisible = isSmall,
-            outliersVisible = false,
-            defaultZoom = !isSmall;
-
-        if (data.length === 0) {
+        if (model.items.length === 0) {
             return <SimpleLoader />
         }
-
-        const title = this.props.hideTitle ? ""
-            : `${configurationName}<br /><small>(${(this.ratio * 100).toFixed(2)} % working)</small>`;
-
+        console.log("render");
         return <>
-            {!this.props.simple &&
+
+            {!simple &&
+                <Row>
+                    <ButtonToolbar>
+                        <ButtonGroup>
+                            <Button variant="dark" onClick={(i) => this.load()}>
+                                <FontAwesomeIcon icon={faRedo} />
+                            </Button>
+                            <DropdownButton id="dropdown-basic-button"
+                                title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
+                                {configurations.map((item, j) =>
+                                    <Dropdown.Item
+                                        key={getConfigurationName(item)}
+                                        onSelect={i => {
+                                            this.switchConfig(item);
+                                            (this.props as any).history.push(`/benchmarks/${j}`);
+                                        }}
+                                        active={configurationName === getConfigurationName(item)}
+                                    >
+                                        {getConfigurationName(item)}
+                                    </Dropdown.Item>
+                                )}
+                            </DropdownButton>
+                        </ButtonGroup>
+                        <Button onClick={() => this.showBroken = !showBroken}>
+                            Toggle broken builds
+                    </Button>
+                    </ButtonToolbar>
+                </Row>
+            }
+            <Row>
+                <Col lg={isSmall ? 12 : 9}>
+                    <BenchmarkViewChart
+                        commitFilter={commitFilter}
+                        hideTitle={hideTitle === true}
+                        isSmall={isSmall}
+                        model={model}
+                        showBroken={showBroken}
+                        onClick={(timer) => {
+                            if (!this.setTimer) {
+                                return;
+                            }
+
+                            this.timerLocked = !this.timerLocked;
+                            this.setTimer(timer);
+
+                            if (this.timerLocked) {
+                                this.commitFilter = [
+                                    ...(timer.left || []),
+                                    ...(timer.right || []),
+                                ]
+                            } else {
+                                this.commitFilter = [];
+                            }
+                        }}
+                        onHover={(timer) => {
+                            if (!this.setTimer) {
+                                return;
+                            }
+                            if (!this.timerLocked) {
+                                this.setTimer(timer);
+                            }
+                        }}
+                    />
+                </Col>
+                {!isSmall &&
+                    <Col lg={3}>
+                        <RenderStats onInit={setTimer => this.setTimer = setTimer} />
+                    </Col>}
+            </Row>
+        </>
+
+        /*
+            new Prop("count", "N", i => i.toFixed()),
+            new Prop("info.branch", "Branch", noFormat),
+            new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
+            new Prop("welch.pValue", "pValue", (i: number) => i == null ? "" : i.toFixed(3)),
+            new Prop("welch.estimatedValue1", "x1", (i: number) => i == null ? "" : i.toFixed(2)),
+            new Prop("welch.estimatedValue2", "x2", (i: number) => i == null ? "" : i.toFixed(2)),
+            new Prop("welch.radius", "r", (i: number) => i == null ? "" : i),
+            new Prop("welch.n1", "n1", (i: number) => i == null ? "" : i),
+            new Prop("welch.n2", "n2", (i: number) => i == null ? "" : i),
+            new Prop("left", "left", (i: string[]) => i == null ? "" : i.join(', ')),
+            new Prop("right", "right", (i: string[]) => i == null ? "" : i.join(', ')),
+            new Prop("fooo", " ", (i: any) => "-----------------<br />"),
+            "count",
+            "low",
+            "q1",
+            "median",
+            "q3",
+            "high",
+        */
+
+        /*return <>
+            {!simple &&
                 <ButtonToolbar>
                     <ButtonGroup>
                         <Button variant="dark" onClick={(i) => this.load()}>
@@ -266,246 +334,26 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
                             {configurations.map((item, j) =>
                                 <Dropdown.Item
-                                    key={this.configurationName(item)}
+                                    key={getConfigurationName(item)}
                                     onSelect={i => {
                                         this.switchConfig(item);
                                         (this.props as any).history.push(`/benchmarks/${j}`);
                                     }}
-                                    active={configurationName === this.configurationName(item)}
+                                    active={configurationName === getConfigurationName(item)}
                                 >
-                                    {this.configurationName(item)}
+                                    {getConfigurationName(item)}
                                 </Dropdown.Item>
                             )}
                         </DropdownButton>
                     </ButtonGroup>
-                    <Button onClick={() => this.showBroken = !this.showBroken}>
+                    <Button onClick={() => this.showBroken = !showBroken}>
                         Toggle broken builds
                     </Button>
                 </ButtonToolbar>
             }
             {xLabels.length > 0 &&
                 <div className={`${this.showTooltip ? "" : "no-tooltip"}`}>
-                    <HighchartsReact highcharts={Highcharts} options={{
-                        title: {
-                            text: title,
-                        },
-                        plotOptions: {
-                            series: {
-                                turboThreshold: 0,
-                                animation: isSmall ? false : {
-                                    duration: 200,
-                                },
-                            }
-                        },
-                        credits: {
-                            enabled: false
-                        },
-                        legend: {
-                            enabled: !isSmall,
-                        },
-                        chart: {
-                            zoomType: "x",
-                            height: isSmall ? "256" : "700",
-                            events: {
-                                click: function(e) {
-                                    //console.log(e)
-                                },
-                                load: function (ev) {
-                                    if (defaultZoom) {
-                                        const chart = this as any;
-                                        chart.xAxis[0].setExtremes(
-                                            chart.series[0].xData.length - maxCommitByDefault,
-                                            chart.series[0].xData.length
-                                        );
-                                        chart.showResetZoom();
-                                    }
-                                },
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                text: null,
-                            },
-                        },
-                        xAxis: {
-                            title: {
-                                text: null,
-                            },
-                            tickInterval: 1,
-                            labels: {
-                                enabled: !this.props.hideXTicks,
-                                style: {
-                                    fontSize: "9px"
-                                },
-                                formatter: function () {
-                                    try {
-                                        const info = commitInfo.get(xLabels[this.value]);
-
-                                        return !info ? xLabels[this.value].substr(0, 8) :
-                                            `${moment(info.date as any).fromNow(true)} - ${info.branch || info.branches}`
-                                    } catch (error) {
-                                        return "";
-                                    }
-                                }
-                            }
-                        },
-                        tooltip: {
-                            useHTML: true,
-                            snap: 0,
-                        },
-                        series: [
-                            {
-                                allowPointSelect: true,
-                                type: "boxplot",
-                                name: "Boxplot",
-                                visible: boxplotVisible,
-                                stickyTracking: false,
-                                color: (Highcharts as any).getOptions().colors[0],
-                                point: {
-                                    events: {
-                                        click: function(e) {
-                                            const item = this as any as ISimpleTimers;
-                                            if (self.commitDetail === item)
-                                            {
-                                                self.commitFilter = [];
-                                                return;
-                                            }
-
-                                            self.commitFilter = [
-                                                ...(item.left || []),
-                                                ...(item.right || []),
-                                            ]
-                                            self.commitDetail = item;
-                                        }
-                                    }
-                                },
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this,
-                                            new Prop("count", "N", i => i.toFixed()),
-                                            new Prop("info.branch", "Branch", noFormat),
-                                            new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
-                                            new Prop("welch.pValue", "pValue", (i: number) => i == null ? "" : i.toFixed(3)),
-                                            new Prop("welch.estimatedValue1", "x1", (i: number) => i == null ? "" : i.toFixed(2)),
-                                            new Prop("welch.estimatedValue2", "x2", (i: number) => i == null ? "" : i.toFixed(2)),
-                                            new Prop("welch.radius", "r", (i: number) => i == null ? "" : i),
-                                            new Prop("welch.n1", "n1", (i: number) => i == null ? "" : i),
-                                            new Prop("welch.n2", "n2", (i: number) => i == null ? "" : i),
-                                            new Prop("left", "left", (i: string[]) => i == null ? "" : i.join(', ')),
-                                            new Prop("right", "right", (i: string[]) => i == null ? "" : i.join(', ')),
-                                            new Prop("fooo", " ", (i: any) => "-----------------<br />"),
-                                            "count",
-                                            "low",
-                                            "q1",
-                                            "median",
-                                            "q3",
-                                            "high",
-                                        );
-                                    }
-                                },
-                                data: data.map(i => {
-                                    return {
-                                        ...i,
-                                        x: commits.get(i.commit),
-                                        color: getColor(i as ISimpleTimers)
-                                    };
-                                })
-                            },
-                            {
-                                type: "area",
-                                name: "Median",
-                                visible: medianVisible,
-                                stickyTracking: !isSmall,
-                                data: data.map(i => {
-                                    return {
-                                        y: i.median as number,
-                                        x: commits.get(i.commit),
-                                        color: getColor(i as ISimpleTimers)
-                                    } as any;
-                                }),
-                                enableMouseTracking: medianVisible,
-                                lineWidth: 1,
-                                dashStyle: isSmall ? "Solid" : "ShortDot",
-                                marker: {
-                                    enabled: isSmall,
-                                    radius: 4,
-                                },
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
-                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
-                                    ]
-                                },
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
-                                    }
-                                }
-                            },
-                            {
-                                type: "area",
-                                name: "Low",
-                                visible: false,
-                                stickyTracking: !false,
-                                data: data.map(i => {
-                                    return {
-                                        y: i.low as number,
-                                        x: commits.get(i.commit),
-                                        color: getColor(i as ISimpleTimers)
-                                    } as any;
-                                }),
-                                enableMouseTracking: false,
-                                lineWidth: 1,
-                                dashStyle: isSmall ? "Solid" : "ShortDot",
-                                marker: {
-                                    enabled: isSmall,
-                                    radius: 4,
-                                },
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
-                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
-                                    ]
-                                },
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
-                                    }
-                                }
-                            },
-                            {
-                                type: "scatter",
-                                name: "Outliers",
-                                visible: outliersVisible,
-                                stickyTracking: false,
-                                color: Color((Highcharts as any).getOptions().colors[0]).darken(0.5).hex(),
-                                data: outliers.map(i => {
-                                    return { y: i.y, x: commits.get(i.x) };
-                                }),
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Value"));
-                                    }
-                                },
-                            },
-                        ]
-                    }} />
+                <HighchartsReact highcharts={Highcharts} options={options} />
 
                     {!this.props.simple &&
                         <div>
@@ -514,13 +362,13 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                 use <strong>Reset zoom</strong> to view all of the commits
                             </Alert>
                             <Alert variant="light">
-                                <em>Note</em> If <strong>|max - μ| > ε/μ</strong>, max is marked as an outlier if the chart
+                                <em>Note</em> If <strong>|max - μ| {'>'} ε/μ</strong>, max is marked as an outlier if the chart
                                 in order to simplify the chart, <strong>ε</strong> is currently {outlierCoef * 100}%
                             </Alert>
                         </div>
                     }
                 </div>
             }
-        </>
+        </>*/
     }
 }
