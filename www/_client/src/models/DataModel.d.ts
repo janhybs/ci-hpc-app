@@ -84,16 +84,18 @@
 		commitInfo: IColRepoInfo;
 		count: number;
 		durations: number[];
-		high: number;
 		info: IGitInfo;
 		isBroken: boolean;
 		left: string[];
+		right: string[];
+		welch: IWelch;
+	}
+	export interface ISimpleTimersEx extends ISimpleTimers {
+		high: number;
 		low: number;
 		median: number;
 		q1: number;
 		q3: number;
-		right: string[];
-		welch: IWelch;
 	}
 	export interface IGitInfo {
 		branch: string;

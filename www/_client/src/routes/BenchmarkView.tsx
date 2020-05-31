@@ -3,7 +3,7 @@ import React from "react";
 import { observer } from "mobx-react"
 import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
-import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
+import { ITimersFilter, IIndexInfo, ISimpleTimers, ISimpleTimersEx } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -89,8 +89,8 @@ const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)
 }
 
 
-const checkOutliers = (item: ISimpleTimers) => {
-    const j = item as Required<ISimpleTimers>;
+const checkOutliers = (item: ISimpleTimersEx) => {
+    const j = item as Required<ISimpleTimersEx>;
     const low = j.median - j.low > j.median * outlierCoef;
     const high = j.high - j.median > j.median * outlierCoef;
     return { low, high };
@@ -171,7 +171,23 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     return dateB - dateA;
                 });*/
 
-                const { data, outliers } = this.fixData(rawData);
+                //const { data, outliers } = this.fixData(rawData);
+                const data: ISimpleTimersEx[] = rawData.map(
+                    i => {
+                        const dur = i.durations || [0, 0, 0];
+                        const len = dur.length;
+                        const int = Math.floor;
+
+                        return {
+                            ...i,
+                            low: Math.min(...dur),
+                            high: Math.max(...dur),
+                            median: dur[int(len / 2)],
+                            q1: dur[int(len * 0.25)],
+                            q3: dur[int(len * 0.75)],
+                        }
+                    }
+                )
 
                 //this.data = data;
                 //this.outliers = outliers
@@ -189,7 +205,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         this.load();
     }
 
-    fixData(items: ISimpleTimers[]) {
+    /*fixData(items: ISimpleTimersEx[]) {
         let data: any[] = [];
         let outliers: IOutlier[] = [];
 
@@ -208,7 +224,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         });
 
         return { data, outliers };
-    }
+    }*/
 
     @action.bound
     handleKeyDown(e: KeyboardEvent) {
@@ -297,7 +313,10 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                 </Col>
                 {!isSmall &&
                     <Col lg={3}>
-                        <RenderStats onInit={setTimer => this.setTimer = setTimer} />
+                        <RenderStats
+                            onInit={setTimer => this.setTimer = setTimer}
+                            timers={data}
+                        />
                     </Col>}
             </Row>
         </>

@@ -28,6 +28,7 @@ namespace CC.Net
                         .For<ColTimers>()
                         .For<SimpleTimer>()
                         .For<SimpleTimers>()
+                        .For<SimpleTimersEx>()
 
                         .For<SchedulerFilter>()
                         .For<TimersFilter>()

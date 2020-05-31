@@ -1,7 +1,7 @@
 import React from "react";
 
 import { observable } from "mobx";
-import { ISimpleTimers, IIndexInfo, ITimersFilter } from "../models/DataModel";
+import { ISimpleTimers, IIndexInfo, ITimersFilter, ISimpleTimersEx } from "../models/DataModel";
 import { configurations } from "../init";
 
 
@@ -10,7 +10,7 @@ export class BenchmarkViewModel {
     @observable
     public configuration: IIndexInfo = configurations[0] as IIndexInfo;
 
-    public items: ISimpleTimers[] = [];
+    public items: ISimpleTimersEx[] = [];
 
     public ratio: number = NaN;
 

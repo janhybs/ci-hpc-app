@@ -7,31 +7,9 @@ using CC.Net.Stats;
 
 namespace cc.net.Collections.Shared
 {
-    public class SimpleTimers
+
+    public class SimpleTimersEx: SimpleTimers
     {
-        [JsonIgnore]
-        public ColRepoInfo CommitInfo { get; }
-
-        public SimpleTimers() { }
-        public SimpleTimers(ColRepoInfo commitInfo)
-        {
-            CommitInfo = commitInfo;
-        }
-
-        public string Commit { get; set; }
-        public string Branch { get; set; }
-
-        public bool isBroken { get; set; } = false;
-
-        public GitInfo Info { get; set; }
-
-        [JsonIgnore]
-        public double[] Durations { get; set; }
-
-        public int Count => Durations.Length;
-
-        public Welch Welch { get; set; }
-
         public double Median
         {
             get
@@ -64,6 +42,32 @@ namespace cc.net.Collections.Shared
         public double Low => Durations.Min();
 
         public double High => Durations.Max();
+    }
+
+    public class SimpleTimers
+    {
+        [JsonIgnore]
+        public ColRepoInfo CommitInfo { get; }
+
+        public SimpleTimers() { }
+        public SimpleTimers(ColRepoInfo commitInfo)
+        {
+            CommitInfo = commitInfo;
+        }
+
+        public string Commit { get; set; }
+        public string Branch { get; set; }
+
+        public bool isBroken { get; set; } = false;
+
+        public GitInfo Info { get; set; }
+
+        //[JsonIgnore]
+        public double[] Durations { get; set; }
+
+        public int Count => Durations.Length;
+
+        public Welch Welch { get; set; }
 
         public List<string> Left { get; set; }
         public List<string> Right { get; set; }
