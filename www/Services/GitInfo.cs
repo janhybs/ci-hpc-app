@@ -31,7 +31,7 @@ namespace CC.Net.Services
 
             return new GitInfo
             {
-                Date = repoInfo.AuthoredDatetime,
+                Date = repoInfo.AuthoredDatetime, // commited date?
                 Message = repoInfo.Message,
                 Branch = repoInfo.Branch,
                 Branches = repoInfo.Branches,

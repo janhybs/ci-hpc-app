@@ -14,14 +14,16 @@ interface BenchmarkViewChartProps {
     commitFilter: string[];
     isSmall: boolean;
     hideTitle: boolean;
+    detailCommit?: string;
 
     onHover: (timer: ISimpleTimers) => void,
     onClick: (timer: ISimpleTimers) => void
 }
+
 export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
     console.log("!!! render chart");
     
-    const { model, showBroken, commitFilter, isSmall, hideTitle, onHover, onClick } = props;
+    const { model, showBroken, commitFilter, isSmall, hideTitle, onHover, onClick, detailCommit } = props;
     const configurationName = getConfigurationName(model.configuration);
 
     const title = hideTitle ? ""
@@ -54,7 +56,7 @@ export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
                 data: data.map(i => {
                     return {
                         ...i,
-                        color: getColor(i),
+                        color: getColor(i, detailCommit),
                         y: i.median
                     } as any;
                 }),
@@ -76,7 +78,7 @@ export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
                 data: data.map(i => {
                     return {
                         ...i,
-                        color: getColor(i)
+                        color: getColor(i, detailCommit)
                     } as any;
                 })
             },

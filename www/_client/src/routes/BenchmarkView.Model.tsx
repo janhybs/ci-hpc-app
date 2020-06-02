@@ -25,11 +25,15 @@ export const getConfigurationName = (item: IIndexInfo) =>{
     return `${item.test} ${item.benchmark} ${item.mesh}`;
 }
 
-export const getColor = (point: ISimpleTimers) => {
+export const getColor = (point: ISimpleTimers, commitId="") => {
+
     return point.isBroken
         ? "gray"
         : (point.welch !== null && point.welch.significant
-            ? (point.welch.estimatedValue1 < point.welch.estimatedValue2 ? "green" : "red")
+            ? (point.welch.estimatedValue1 < point.welch.estimatedValue2
+                ? (point?.commit === commitId ? "darkgreen" : "green")
+                : (point?.commit === commitId ? "darkred" : "red")
+                )
             : null);
 }
 
