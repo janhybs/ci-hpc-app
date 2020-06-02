@@ -23,6 +23,7 @@ import { BenchmarkViewModel, getConfigurationName, trimSha } from "./BenchmarkVi
 import { BenchmarkViewChart, DD } from "./BenchmarkView.Chart";
 import { Col } from "reactstrap";
 import { RenderStats } from "./BenchmarView.Stats";
+import { countUnique } from "../utils/MapUtils";
 addHighchartsMore(Highcharts);
 
 
@@ -111,6 +112,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     private timerLocked: boolean = false;
 
+    @observable
+    private selectedBranch: string = "master";
+
     private setTimer: any;
 
     constructor(state) {
@@ -180,27 +184,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         this.load();
     }
 
-    /*fixData(items: ISimpleTimersEx[]) {
-        let data: any[] = [];
-        let outliers: IOutlier[] = [];
-
-        items.forEach(item => {
-            const { low, high } = checkOutliers(item);
-            let i = item as any;
-            if (low) {
-                outliers.push({ x: i.commit, y: i.low });
-                i.low = item.q1;
-            }
-            if (high) {
-                outliers.push({ x: i.commit, y: i.high });
-                i.high = item.q3;
-            }
-            data.push(i);
-        });
-
-        return { data, outliers };
-    }*/
-
     @action.bound
     handleKeyDown(e: KeyboardEvent) {
         if (e.key === "Shift") {
@@ -209,7 +192,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     }
 
     render() {
-        const { commitFilter, model, showBroken, oldCommitSha } = this;
+        const { commitFilter, model, showBroken, oldCommitSha, selectedBranch } = this;
         const configurationName = getConfigurationName(model.configuration);
         const { size, simple, hideTitle } = this.props;
         const isSmall = size === "small";
@@ -222,7 +205,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             if (!this.setTimer) {
                 return;
             }
-            
+            this.setTimer(timer);
+            this.timerLocked = !this.timerLocked;
+            /*
             const newCommitSha = timer.commit;
             this.setTimer(timer);
             if(detailMode && newCommitSha === oldCommitSha) {
@@ -234,7 +219,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     ...(timer.left || []),
                     ...(timer.right || []),
                 ];
-            }
+            }*/
         }
 
         const handleHover = (timer: ISimpleTimers) => {
@@ -251,7 +236,15 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             return <SimpleLoader />
         }
 
-        console.log("render");
+        const branches = new Map([
+            ["", data.length],
+            ...countUnique(
+                data.filter(i => i.isBroken === false)
+                    .flatMap(i => i.info?.branches || [])
+                    .filter(i => i != null))
+                .entries()
+            ]);
+
         return <>
 
             {!simple &&
@@ -279,7 +272,22 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         </ButtonGroup>
                         <Button onClick={() => this.showBroken = !showBroken}>
                             Toggle broken builds
-                    </Button>
+                        </Button>
+                        <DropdownButton
+                            id="dropdown-branch"
+                            title={selectedBranch ? selectedBranch : "<Select branch>"}
+                            value={selectedBranch}
+                            >
+                            {[...branches.entries()]
+                                .slice(0, 55)
+                                .map(i => {
+                                    return <Dropdown.Item key={i[0]}
+                                        onSelect={() => this.selectedBranch = i[0]}>
+                                        {i[0]} ({i[1]} cmts)
+                                    </Dropdown.Item>
+                            })}
+                            
+                        </DropdownButton>
                     </ButtonToolbar>
                 </Row>
             }
@@ -292,6 +300,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         model={model}
                         showBroken={showBroken}
                         detailCommit={oldCommitSha}
+                        selectedBranch={selectedBranch}
                         onClick={timer => handleClick(timer)}
                         onHover={timer => handleHover(timer)}
                     />

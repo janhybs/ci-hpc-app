@@ -26,7 +26,10 @@ export const getConfigurationName = (item: IIndexInfo) =>{
 }
 
 export const getColor = (point: ISimpleTimers, commitId="") => {
-
+    if(point.welch == null)
+    {
+        return "gray";
+    }
     return point.isBroken
         ? "gray"
         : (point.welch !== null && point.welch.significant
