@@ -1,11 +1,11 @@
 import React from "react";
 
 import { observer } from "mobx-react"
-import { observable } from "mobx"
+import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
-import { ITimersFilter, IIndexInfo, ISimpleTimers } from "../models/DataModel";
+import { ITimersFilter, IIndexInfo, ISimpleTimers, ISimpleTimersEx } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
-import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert } from "react-bootstrap";
+import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRedo } from '@fortawesome/free-solid-svg-icons'
 import Color from "color"
@@ -18,6 +18,12 @@ import Highcharts from 'highcharts/highstock';
 import addHighchartsMore from 'highcharts/highcharts-more';
 import { NotificationApi } from "../utils/Notification";
 import { SimpleLoader } from "../components/SimpleLoader";
+import { getOptions, registerOptions } from "./BenchmarkView.Options";
+import { BenchmarkViewModel, getConfigurationName, trimSha } from "./BenchmarkView.Model";
+import { BenchmarkViewChart, DD } from "./BenchmarkView.Chart";
+import { Col } from "reactstrap";
+import { RenderStats } from "./BenchmarView.Stats";
+import { countUnique } from "../utils/MapUtils";
 addHighchartsMore(Highcharts);
 
 
@@ -29,11 +35,11 @@ const defaultFormat = (i: any) => i.toFixed(2);
 const noFormat = i => i;
 const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
 const outlierCoef = 0.25;
-const maxCommitByDefault = 30;
+const maxCommitByDefault = 100;
 
 interface IOutlier {
-    x?: string;
-    y?: number;
+    x: string;
+    y: number;
 }
 
 const filterBranches = (branches: string[]) =>
@@ -47,33 +53,18 @@ class Prop {
     public prop(o: any) {
         const keys = this.key.split(".");
         let c = o;
-        keys.forEach(i => c = c[i]);
-        return c;
+        try {
+            keys.forEach(i => c = c[i]);
+            return c;
+        } catch (error) {
+            return null;
+        }
     }
 }
 
-const pointFormatter = (xLabels: string[], point: any, ...props: (Prop | string)[]) => {
 
-    return `<div onclick="window.open('${flow123dCommitUrl}${xLabels[point.x]}', '_blank')">
-        <code>
-            <a href="${flow123dCommitUrl}${xLabels[point.x]}" target="_blank">
-                ${xLabels[point.x].substr(0, 16)}
-            </a>
-        </code>
-        <dl class="boxplot">
-            ${props.map(p => {
-            const prop: Prop = typeof (p) === "string" ? new Prop(p as string) : p as Prop;
-            const value = prop.format(prop.prop(point) || NaN);
-            return `<dt>${prop.title}:</dt> <dd>${value}</dd>`;
-        }).join("")
-            }
-        <dl>
-    </div>`
-}
-
-
-const checkOutliers = (item: ISimpleTimers) => {
-    const j = item as Required<ISimpleTimers>;
+const checkOutliers = (item: ISimpleTimersEx) => {
+    const j = item as Required<ISimpleTimersEx>;
     const low = j.median - j.low > j.median * outlierCoef;
     const high = j.high - j.median > j.median * outlierCoef;
     return { low, high };
@@ -81,23 +72,9 @@ const checkOutliers = (item: ISimpleTimers) => {
 
 interface BenchmarkViewState {
     model: BenchmarkViewModel;
+    foo: number;
 }
 
-class BenchmarkViewModel {
-
-    @observable
-    public configuration: IIndexInfo = configurations[0];
-
-    @observable
-    public items: ISimpleTimers[] = [];
-
-    public get filter(): ITimersFilter {
-        return {
-            info: this.configuration,
-            limit: 500,
-        };
-    }
-}
 
 export interface BenchmarkViewProps {
     simple?: boolean;
@@ -105,6 +82,8 @@ export interface BenchmarkViewProps {
     hideXTicks?: boolean;
     configuration?: IIndexInfo;
     size?: "big" | "small";
+
+    hideBroken?: boolean
 }
 
 @observer
@@ -116,6 +95,28 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     private data: any[] = []
     private outliers: IOutlier[] = [];
 
+    @observable
+    private ratio: number = NaN;
+
+    @observable
+    private showBroken = false;
+
+    @observable
+    private showTooltip = false;
+
+    @observable
+    private commitFilter: string[] = [];
+
+    private oldCommitSha: string = "";
+
+    @observable
+    private timerLocked: boolean = false;
+
+    @observable
+    private selectedBranch: string = "master";
+
+    private setTimer: any;
+
     constructor(state) {
         super(state);
 
@@ -125,27 +126,55 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         if (this.props.configuration != null) {
             this.model.configuration = this.props.configuration
         } else if (index != null) {
-            this.model.configuration = configurations[index];
+            this.model.configuration = configurations[index] as IIndexInfo;
         }
         this.load();
+        window.addEventListener("keydown", e => this.handleKeyDown(e));
     }
 
     load() {
         httpClient.fetch<ISimpleTimers[]>("timers/list", this.model.filter)
-            .then((json: ISimpleTimers[]) => {
+            .then((json: any) => {
 
-                const sortedData = json.sort((b, a) => {
+                let rawData = json.data as ISimpleTimers[];
+                this.ratio = json.ratio;
+
+                if (this.props.hideBroken === true) {
+                    rawData = rawData
+                        .filter(i => i.isBroken === false);
+                }
+
+                /*const sortedData = rawData.sort((b, a) => {
                     const dateB = b.info ? new Date(b.info.date as any).getTime() : 0;
                     const dateA = a.info ? new Date(a.info.date as any).getTime() : 0;
                     return dateB - dateA;
-                });
-                const { data, outliers } = this.fixData(sortedData);
+                });*/
 
-                this.data = data;
-                this.outliers = outliers
+                //const { data, outliers } = this.fixData(rawData);
+                const data: ISimpleTimersEx[] = rawData.map(
+                    i => {
+                        const dur = i.durations || [0, 0, 0];
+                        const len = dur.length;
+                        const int = Math.floor;
+
+                        return {
+                            ...i,
+                            low: Math.min(...dur),
+                            high: Math.max(...dur),
+                            median: dur[int(len / 2)],
+                            q1: dur[int(len * 0.25)],
+                            q3: dur[int(len * 0.75)],
+                        }
+                    }
+                )
+
+                //this.data = data;
+                //this.outliers = outliers
 
                 this.model.items = data;
+                this.model.ratio = json.ratio;
 
+                this.setState({ foo: Math.random() });
                 NotificationApi.success('Data loaded', "", 1000);
             });
     }
@@ -155,239 +184,135 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         this.load();
     }
 
-    configurationName(item: IIndexInfo) {
-        return `${item.cpus} x ${item.test} ${item.benchmark} ${item.mesh}`;
-    }
-
-    fixData(items: ISimpleTimers[]) {
-        let data: any[] = [];
-        let outliers: IOutlier[] = [];
-
-        items.forEach(item => {
-            const { low, high } = checkOutliers(item);
-            let i = item as any;
-            if (low) {
-                outliers.push({ x: i.commit, y: i.low });
-                i.low = item.q1;
-            }
-            if (high) {
-                outliers.push({ x: i.commit, y: i.high });
-                i.high = item.q3;
-            }
-            data.push(i);
-        });
-
-        return { data, outliers };
+    @action.bound
+    handleKeyDown(e: KeyboardEvent) {
+        if (e.key === "Shift") {
+            this.showTooltip = !this.showTooltip;
+        }
     }
 
     render() {
-        const configurationName = this.configurationName(this.model.configuration);
-        const commits = new Map(this.model.items.map((c, i) => [c.commit, i]));
-        const commitInfo = new Map(this.model.items.map(c => [c.commit, c.info]));
-        const xLabels = [...commits.keys()] as string[];
-        const { data, outliers } = this;
+        const { commitFilter, model, showBroken, oldCommitSha, selectedBranch } = this;
+        const configurationName = getConfigurationName(model.configuration);
+        const { size, simple, hideTitle } = this.props;
+        const isSmall = size === "small";
+        const isSimple = simple === true;
+        const data = model.items;
+        const detailMode = commitFilter.length > 0;
 
-        const isSmall = this.props.size === "small";
-        const boxplotVisible = !isSmall,
-            medianVisible = isSmall,
-            outliersVisible = false,
-            defaultZoom = !isSmall;
-        
-        if (data.length === 0) {
+
+        const handleClick = (timer: ISimpleTimers) => {
+            if (!this.setTimer) {
+                return;
+            }
+            this.setTimer(timer);
+            this.timerLocked = !this.timerLocked;
+            /*
+            const newCommitSha = timer.commit;
+            this.setTimer(timer);
+            if(detailMode && newCommitSha === oldCommitSha) {
+                this.oldCommitSha = "";
+                this.commitFilter = [];
+            } else {
+                this.oldCommitSha = timer.commit;
+                this.commitFilter = [
+                    ...(timer.left || []),
+                    ...(timer.right || []),
+                ];
+            }*/
+        }
+
+        const handleHover = (timer: ISimpleTimers) => {
+            if (!this.setTimer) {
+                return;
+            }
+            
+            if (!this.timerLocked) {
+                this.setTimer(timer);
+            }
+        }
+
+        if (model.items.length === 0) {
             return <SimpleLoader />
         }
 
+        const branches = new Map([
+            ["", data.length],
+            ...countUnique(
+                data.filter(i => i.isBroken === false)
+                    .flatMap(i => i.info?.branches || [])
+                    .filter(i => i != null))
+                .entries()
+            ]);
+
         return <>
-            {!this.props.simple &&
-                <ButtonToolbar>
-                    <ButtonGroup>
-                        <Button variant="dark" onClick={(i) => this.load()}>
-                            <FontAwesomeIcon icon={faRedo} />
+
+            {!simple &&
+                <Row>
+                    <ButtonToolbar>
+                        <ButtonGroup>
+                            <Button variant="dark" onClick={(i) => this.load()}>
+                                <FontAwesomeIcon icon={faRedo} />
+                            </Button>
+                            <DropdownButton id="dropdown-basic-button"
+                                title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
+                                {configurations.map((item, j) =>
+                                    <Dropdown.Item
+                                        key={getConfigurationName(item)}
+                                        onSelect={i => {
+                                            this.switchConfig(item);
+                                            (this.props as any).history.push(`/benchmarks/${j}`);
+                                        }}
+                                        active={configurationName === getConfigurationName(item)}
+                                    >
+                                        {getConfigurationName(item)}
+                                    </Dropdown.Item>
+                                )}
+                            </DropdownButton>
+                        </ButtonGroup>
+                        <Button onClick={() => this.showBroken = !showBroken}>
+                            Toggle broken builds
                         </Button>
-                        <DropdownButton id="dropdown-basic-button"
-                            title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
-                            {configurations.map(item =>
-                                <Dropdown.Item
-                                    key={this.configurationName(item)}
-                                    onSelect={i => this.switchConfig(item)}
-                                    active={configurationName === this.configurationName(item)}
-                                >
-                                    {this.configurationName(item)}
-                                </Dropdown.Item>
-                            )}
+                        <DropdownButton
+                            id="dropdown-branch"
+                            title={selectedBranch ? selectedBranch : "<Select branch>"}
+                            value={selectedBranch}
+                            >
+                            {[...branches.entries()]
+                                .slice(0, 55)
+                                .map(i => {
+                                    return <Dropdown.Item key={i[0]}
+                                        onSelect={() => this.selectedBranch = i[0]}>
+                                        {i[0]} ({i[1]} cmts)
+                                    </Dropdown.Item>
+                            })}
+                            
                         </DropdownButton>
-                    </ButtonGroup>
-                </ButtonToolbar>
+                    </ButtonToolbar>
+                </Row>
             }
-            {xLabels.length > 0 &&
-                <div>
-                    <HighchartsReact highcharts={Highcharts} options={{
-                        title: {
-                            text: this.props.hideTitle ? "" : configurationName,
-                        },
-                        plotOptions: {
-                            series: {
-                                animation: isSmall ? false : {
-                                    duration: 200,
-                                },
-                            }
-                        },
-                        credits: {
-                            enabled: false
-                        },
-                        legend: {
-                            enabled: !isSmall,
-                        },
-                        chart: {
-                            zoomType: "x",
-                            height: isSmall ? "256" : "700",
-                            events: {
-                                load: function (ev) {
-                                    if (defaultZoom) {
-                                        const chart = this as any;
-                                        chart.xAxis[0].setExtremes(
-                                            chart.series[0].xData.length - maxCommitByDefault,
-                                            chart.series[0].xData.length
-                                        );
-                                        chart.showResetZoom();
-                                    }
-                                },
-                            }
-                        },
-                        yAxis: {
-                            title: {
-                                text: null,
-                            },
-                        },
-                        xAxis: {
-                            title: {
-                                text: null,
-                            },
-                            tickInterval: 1,
-                            labels: {
-                                style: {
-                                    fontSize: "9px"
-                                },
-                                // useHTML: true,
-                                enabled: !this.props.hideXTicks,
-                                formatter: function () {
-                                    try {
-                                        const info = commitInfo.get(xLabels[this.value]);
-
-                                        return !info ? xLabels[this.value].substr(0, 8) :
-                                            `${moment(info.date as any).fromNow(true)} - ${info.branch || info.branches}`
-                                    } catch (error) {
-                                        return "";
-                                    }
-                                }
-                            }
-                        },
-                        tooltip: {
-                            useHTML: true,
-                            snap: 0,
-                        },
-                        series: [
-                            {
-                                type: "area",
-                                name: "Median",
-                                visible: medianVisible,
-                                stickyTracking: medianVisible,
-                                data: data.map(i => {
-                                    return {
-                                        y: i.median as number,
-                                        x: commits.get(i.commit),
-                                        color: i.isBroken ? "red" : null
-                                    } as any;
-                                }),
-                                enableMouseTracking: medianVisible,
-                                lineWidth: 1,
-                                dashStyle:  isSmall ? "Solid" : "ShortDot",
-                                marker: {
-                                    enabled: isSmall,
-                                    radius: 4,
-                                },
-                                fillColor: {
-                                    linearGradient: {
-                                        x1: 0,
-                                        y1: 0,
-                                        x2: 0,
-                                        y2: 1
-                                    },
-                                    stops: [
-                                        [0, Color((Highcharts as any).getOptions().colors[0]).alpha(0.3).toString()],
-                                        [1, Color((Highcharts as any).getOptions().colors[0]).alpha(0.0).toString()]
-                                    ]
-                                },
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Median"));
-                                    }
-                                }
-                            },
-                            {
-                                type: "boxplot",
-                                name: "Boxplot",
-                                visible: boxplotVisible,
-                                stickyTracking: false,
-                                color: (Highcharts as any).getOptions().colors[0],
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this,
-                                            new Prop("count", "N", i => i.toFixed()),
-                                            new Prop("info.branch", "Branch", noFormat),
-                                            new Prop("info.branches", "Branches", (i: string[]) => filterBranches(i).join(", ")),
-                                            "count",
-                                            "low",
-                                            "q1",
-                                            "median",
-                                            "q3",
-                                            "high",
-                                        );
-                                    }
-                                },
-                                data: data.map(i => {
-                                    return {
-                                        ...i,
-                                        x: commits.get(i.commit),
-                                        color: i.isBroken ? "red" : null
-                                    };
-                                })
-                            },
-                            {
-                                type: "scatter",
-                                name: "Outliers",
-                                visible: outliersVisible,
-                                stickyTracking: false,
-                                color: Color((Highcharts as any).getOptions().colors[0]).darken(0.5).hex(),
-                                data: outliers.map(i => {
-                                    return { y: i.y, x: commits.get(i.x) };
-                                }),
-                                tooltip: {
-                                    headerFormat: "",
-                                    pointFormatter: function () {
-                                        return pointFormatter(xLabels, this, new Prop("y", "Value"));
-                                    }
-                                },
-                            },
-                        ]
-                    }} />
-
-                    {!this.props.simple &&
-                        <div>
-                            <Alert variant="info">
-                                <em>Note</em> By default only the last {maxCommitByDefault} commits are visible,
-                                use <strong>Reset zoom</strong> to view all of the commits
-                            </Alert>
-                            <Alert variant="light">
-                                <em>Note</em> If <strong>|max - μ| > ε/μ</strong>, max is marked as an outlier if the chart
-                                in order to simplify the chart, <strong>ε</strong> is currently {outlierCoef * 100}%
-                            </Alert>
-                        </div>
-                    }
-                </div>
-            }
+            <Row>
+                <Col lg={isSmall ? 12 : 9}>
+                    <BenchmarkViewChart
+                        commitFilter={commitFilter}
+                        hideTitle={hideTitle === true}
+                        isSmall={isSmall}
+                        model={model}
+                        showBroken={showBroken}
+                        detailCommit={oldCommitSha}
+                        selectedBranch={selectedBranch}
+                        onClick={timer => handleClick(timer)}
+                        onHover={timer => handleHover(timer)}
+                    />
+                </Col>
+                {!isSmall &&
+                    <Col lg={3}>
+                        <RenderStats
+                            onInit={setTimer => this.setTimer = setTimer}
+                            timers={data}
+                        />
+                    </Col>}
+            </Row>
         </>
     }
 }

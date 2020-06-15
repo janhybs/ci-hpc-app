@@ -26,14 +26,19 @@ namespace CC.Net.Services
             return GetAll(DateTime.Now.AddDays(-daysOld));
         }
 
-        public IEnumerable<ColRepoInfo> GetAll(DateTime minDateTime)
+        public List<ColRepoInfo> GetAll(DateTime minDateTime)
         {
-            var items = _repoInfo.Find(i => i.CommittedDatetime > minDateTime).ToEnumerable();
+            var items = _repoInfo
+                .Find(i => i.CommittedDatetime > minDateTime)
+                .SortBy(i => i.CommittedDatetime)
+                .ToList();
+
             foreach (var item in items)
             {
                 _cache[item.Commit] = item;
-                yield return item;
+                // yield return item;
             }
+            return items;
         }
 
         public ColRepoInfo this[string index]

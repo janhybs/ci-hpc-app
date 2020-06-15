@@ -50,3 +50,9 @@ dl {
     }
   }
 }
+
+.no-tooltip {
+  .highcharts-tooltip {
+    display: none !important;
+  }
+}

@@ -21,6 +21,7 @@ export class Home extends Component {
                   size="small" configuration={configuration}
                   simple
                   hideXTicks
+                  hideBroken={false}
                 />
               </Link>
             </div>

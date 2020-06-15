@@ -49,8 +49,8 @@ export const layoutUtils = new LayoutUtils();
 const cfg = (test, benchmark, mesh, cpus=1): IIndexInfo => {
     return {
         project: "flow123d",
-        cpus, test, benchmark, mesh,
-    }
+        test, benchmark, mesh,
+    } as IIndexInfo;
 }
 
 
@@ -76,4 +76,4 @@ export const configurations: IIndexInfo[] = [
             "2_29365_el"
         ),
     ),
-];
+] as IIndexInfo[];
