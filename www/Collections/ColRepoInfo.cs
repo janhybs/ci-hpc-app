@@ -48,5 +48,7 @@ namespace CC.Net.Collections
         [BsonElement("children")]
         public List<string> Children { get; set; }
 
+        [BsonIgnore]
+        public List<double> Durations { get; set; }
     }
 }

@@ -157,6 +157,8 @@ class RepoUtil:
             documents.append(doc)
 
         logger.info("comparing changes in db")
+        # to_be_updated = [doc.commit for doc in documents]
+        # rexisting_cmts = [x.commit for x in Mongo().col_repo_info.find({}, {"commit": 1})]
         results = Mongo().col_repo_info.find(
             {"commit": in_list([doc.commit for doc in documents])},
             ["commit"],

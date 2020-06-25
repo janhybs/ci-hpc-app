@@ -19,5 +19,8 @@ namespace CC.Net.Collections
 
         [BsonElement("result")]
         public ColTimersResult Result { get; set; }
+
+        [BsonIgnore]
+        public ColRepoInfo Info { get; set; }
     }
 }

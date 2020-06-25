@@ -28,6 +28,7 @@ namespace CC.Net.Services
 
         public List<ColRepoInfo> GetAll(DateTime minDateTime)
         {
+            Console.WriteLine("");
             var items = _repoInfo
                 .Find(i => i.CommittedDatetime > minDateTime)
                 .SortBy(i => i.CommittedDatetime)

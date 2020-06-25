@@ -100,13 +100,19 @@ interface DDProps {
     value: any,
     title: string,
     small?: boolean;
+    tiny?: boolean;
 }
 export const DD = (props: DDProps) => {
-    const { value, title, small } = props;
+    const { value, title, small, tiny } = props;
+    const cls = tiny === true
+        ? "tiny"
+        : small === true 
+            ? "small"
+            : "";
     return <>
         <Row style={{ justifyContent: "space-between"}} className="mx-1">
             <strong>{title}: </strong>
-            <code className={small === true ? "small" : ""}>{value}</code>
+            <code className={cls}>{value}</code>
         </Row>
     </>
 }

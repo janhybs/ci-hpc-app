@@ -6,6 +6,7 @@ import { Card } from "react-bootstrap";
 import Highcharts, { SeriesOptions, SeriesScatterOptions } from 'highcharts/highstock';
 import HighchartsReact from "highcharts-react-official";
 import bellcurve from 'highcharts/modules/histogram-bellcurve';
+import Moment from "react-moment";
 (bellcurve)(Highcharts);
 
 interface RenderStatsProps {
@@ -133,7 +134,10 @@ export const RenderStats = (props: RenderStatsProps) => {
                 {"Repo info"}
             </Card.Header>
             <Card.Body>
-                <DD value={timer.commit} title="Commit" small />
+                <DD value={timer.commit} title="Commit" tiny />
+                <DD title="Date" small value={<>
+                    <Moment format="YYYY-MM-DD HH:mm" date={timer.info?.date} /> (<Moment fromNow date={timer.info?.date} />)
+                    </>} />
                 <DD value={timer.info?.message?.substr(0, 32)} title="Message" small />
                 <DD value={timer.info?.branch} title="Branch" />
                 <DD value={timer.info?.branches?.slice().splice(0, 4).join(", ")} title="Branches" small />
