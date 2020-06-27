@@ -29,4 +29,5 @@ if __name__ == '__main__':
         url=project_config.git.main_repo.url,
         project_config=project_config
     )
+    repo.to_latest()
     repo.schedule_runs()

@@ -20,7 +20,7 @@ from cihpc.shared.utils.data_util import distinct
 from cihpc.shared.utils.git_utils import get_active_branches, BranchCommit, extract_date_from_head, iter_revision
 from git import Repo, RemoteReference, Head, Commit
 
-default_min_age = maya.when('12 months ago')
+default_min_age = maya.when('6 months ago')
 
 
 class RepoUtil:
