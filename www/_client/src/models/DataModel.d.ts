@@ -4,6 +4,12 @@
 		Running = 20,
 		Processed = 30
 	}
+	export interface IColIndexInfoRun {
+		duration: number;
+		isBroken: boolean;
+		job: string;
+		returncode: number;
+	}
 	export interface IColRepoInfo {
 		author: string;
 		authoredDatetime: Date;
@@ -13,6 +19,7 @@
 		commit: string;
 		committedDatetime: Date;
 		distance: number;
+		durations: number[];
 		email: string;
 		id: IObjectId;
 		message: string;
@@ -34,6 +41,7 @@
 	export interface IColTimers {
 		id: IObjectId;
 		index: IIndexInfo;
+		info: IColRepoInfo;
 		objectId: string;
 		result: IColTimersResult;
 	}
@@ -58,6 +66,10 @@
 		machine: number;
 		pid: number;
 		timestamp: number;
+	}
+	export interface ICommitRun {
+		commit: IColRepoInfo;
+		runs: IColIndexInfoRun[];
 	}
 	export interface IIndexInfo {
 		benchmark: string;
@@ -114,6 +126,7 @@
 		radius: number;
 		significant: boolean;
 		size: number;
+		statistic: number;
 	}
 	export interface ISchedulerFilter {
 		limit: number;

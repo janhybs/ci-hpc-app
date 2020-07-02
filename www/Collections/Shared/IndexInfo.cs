@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace cc.net.Collections.Shared
+namespace CC.Net.Collections.Shared
 {
     [BsonIgnoreExtraElements]
     public class IndexInfo

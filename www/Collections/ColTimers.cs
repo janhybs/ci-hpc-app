@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using cc.net.Collections.Shared;
+using CC.Net.Collections.Shared;
 using CC.Net.Db;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;

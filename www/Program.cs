@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using cc.net.Collections.Shared;
+using CC.Net.Collections.Shared;
 using CC.Net.Collections;
 using CC.Net.Dto;
 using CC.Net.Extensions;
@@ -29,6 +29,7 @@ namespace CC.Net
                         .For<SimpleTimer>()
                         .For<SimpleTimers>()
                         .For<SimpleTimersEx>()
+                        .For<CommitRun>()
 
                         .For<SchedulerFilter>()
                         .For<TimersFilter>()

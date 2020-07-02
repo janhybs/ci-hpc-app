@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using cc.net.Collections.Shared;
+using CC.Net.Collections.Shared;
 using CC.Net.Collections;
 using CC.Net.Services;
 using MongoDB.Bson;

@@ -5,7 +5,7 @@ using CC.Net.Collections;
 using CC.Net.Services;
 using CC.Net.Stats;
 
-namespace cc.net.Collections.Shared
+namespace CC.Net.Collections.Shared
 {
 
     public class SimpleTimersEx: SimpleTimers
@@ -71,5 +71,18 @@ namespace cc.net.Collections.Shared
 
         public List<string> Left { get; set; }
         public List<string> Right { get; set; }
+
+        [JsonIgnore]
+        public WelchType WelchType => Welch == null
+            ? WelchType.Unknown
+            : Welch.EstimatedValue1 > Welch.EstimatedValue2
+                ? WelchType.Improvement
+                : WelchType.Decline;
+        
+        override public string ToString()
+        {
+            return $"{Commit?.Substring(0, 6)} {WelchType}";
+        }
     }
+
 }

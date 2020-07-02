@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using cc.net.Collections.Shared;
+using CC.Net.Collections.Shared;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -17,5 +17,8 @@ namespace CC.Net.Collections
         public int Returncode { get; set; }
 
         public bool IsBroken => Returncode != 0;
+
+        [BsonIgnore]
+        public string Job { get; set; }
     }
 }

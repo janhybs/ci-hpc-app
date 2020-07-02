@@ -4,11 +4,20 @@ using System;
 // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/november/test-run-the-t-test-using-csharp
 namespace CC.Net.Stats
 {
+
+    public enum WelchType
+    {
+        Improvement = 1,
+        Decline = 2,
+        Unknown = 3,
+    }
+
     public class Welch
     {
 
         public double PValue { get; set; }
         public bool Significant { get; set; }
+        public double Statistic { get; set; }
         public double Size { get; set; }
         public double DegreesOfFreedom { get; set; }
         public double EstimatedValue1 { get; set; }
@@ -25,7 +34,7 @@ namespace CC.Net.Stats
 
         public static Welch TTest(double[] x, double[] y, int radius)
         {
-            var ttest = new TwoSampleTTest(x, y);
+            var ttest = new TwoSampleTTest(x, y, false);
             ttest.Size = 0.01;
             return new Welch
             {
@@ -33,6 +42,7 @@ namespace CC.Net.Stats
                 N2 = y.Length,
                 Radius = radius,
                 PValue = ttest.PValue,
+                Statistic = ttest.Statistic,
                 Significant = ttest.Significant,
                 Size = ttest.Size,
                 DegreesOfFreedom = ttest.DegreesOfFreedom,

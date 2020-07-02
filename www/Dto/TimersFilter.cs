@@ -1,4 +1,4 @@
-using cc.net.Collections.Shared;
+using CC.Net.Collections.Shared;
 
 namespace CC.Net.Dto
 {

@@ -1,4 +1,4 @@
-namespace cc.net.Collections.Shared
+namespace CC.Net.Collections.Shared
 {
     public class SimpleTimer
     {

@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using cc.net.Collections.Shared;
 using CC.Net.Collections;
+using CC.Net.Collections.Shared;
 using CC.Net.Db;
 using CC.Net.Dto;
 using CC.Net.Extensions;

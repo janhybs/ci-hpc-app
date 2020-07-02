@@ -150,11 +150,12 @@ export const RenderStats = (props: RenderStatsProps) => {
             </Card.Header>
             <Card.Body>
                 <DD value={timer.welch?.n1} title="N" />
-                <DD value={timer.welch?.pValue.toFixed(4)} title="pValue" />
+                <DD value={timer.welch?.pValue.toExponential(2)} title="pValue" />
+                <DD value={timer.welch?.statistic.toFixed(7)} title="statistics" />
                 <DD value={timer.welch?.estimatedValue1.toFixed(4)} title="x1" />
                 <DD value={timer.welch?.estimatedValue2.toFixed(4)} title="x2" />
                 <DD value={timer.welch?.criticalValue.toFixed(4)} title="crit" />
-                <DD value={timer.welch?.degreesOfFreedom} title="DoF" />
+                <DD value={timer.welch?.degreesOfFreedom.toFixed(2)} title="DoF" />
                 <DD value={timer.welch?.radius} title="radius" />
                 <DD value={timer.left?.reduce(trimSha)} title="Left" />
                 <DD value={timer.right?.reduce(trimSha)} title="Right" />
