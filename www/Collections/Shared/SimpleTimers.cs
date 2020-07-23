@@ -44,7 +44,7 @@ namespace CC.Net.Collections.Shared
         public double High => Durations.Max();
     }
 
-    public class SimpleTimers
+    public class SimpleTimers: IDurations
     {
         [JsonIgnore]
         public ColRepoInfo CommitInfo { get; }

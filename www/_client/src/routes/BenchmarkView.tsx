@@ -128,6 +128,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         } else if (index != null) {
             this.model.configuration = configurations[index] as IIndexInfo;
         }
+        this.model.configuration.branch = this.model.configuration.branch || "master";
         this.load();
         window.addEventListener("keydown", e => this.handleKeyDown(e));
     }
@@ -181,6 +182,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     switchConfig(item: IIndexInfo) {
         this.model.configuration = item;
+        this.load();
+    }
+
+    changeBranch(branch: string) {
+        this.selectedBranch = branch;
+        this.model.configuration.branch = branch;
         this.load();
     }
 
@@ -282,7 +289,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                 .slice(0, 55)
                                 .map(i => {
                                     return <Dropdown.Item key={i[0]}
-                                        onSelect={() => this.selectedBranch = i[0]}>
+                                        onSelect={() => this.changeBranch(i[0])}>
                                         {i[0]} ({i[1]} cmts)
                                     </Dropdown.Item>
                             })}

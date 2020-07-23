@@ -24,7 +24,7 @@ interface BenchmarkViewChartProps {
 export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
     console.log("!!! render chart");
     
-    const { model, showBroken, commitFilter, hideTitle, selectedBranch, isSmall, detailCommit, onHover, onClick } = props;
+    const { model, showBroken, commitFilter, hideTitle, isSmall, detailCommit, onHover, onClick } = props;
     const configurationName = getConfigurationName(model.configuration);
 
     const title = hideTitle ? ""
@@ -33,10 +33,6 @@ export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
     const data = model.items
         .filter(i => !i.isBroken || showBroken)
         .filter(i => commitFilter.length == 0 ? true : commitFilter.indexOf(i.commit) >= 0)
-        .filter(i => {
-            
-            return selectedBranch === "" ? true : (i.info?.branches ?? []).indexOf(selectedBranch) != -1
-        });
 
     const commitInfo = new Map(data.map(c => [c.commit, c.info]));
     let options = getOptions(commitInfo);

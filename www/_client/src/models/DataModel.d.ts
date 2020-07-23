@@ -101,6 +101,7 @@
 		left: string[];
 		right: string[];
 		welch: IWelch;
+		welchType: WelchType;
 	}
 	export interface ISimpleTimersEx extends ISimpleTimers {
 		high: number;
@@ -114,6 +115,11 @@
 		branches: string[];
 		date: Date;
 		message: string;
+	}
+	export const enum WelchType {
+		Improvement = 1,
+		Decline = 2,
+		Unknown = 3
 	}
 	export interface IWelch {
 		criticalValue: number;

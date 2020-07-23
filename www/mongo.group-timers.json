@@ -1,0 +1,49 @@
+[
+    {
+        "$match": {
+            "index.project": "flow123d",
+            "index.test": "$$TEST$$",
+            "index.mesh": "$$MESH$$",
+            "index.benchmark": "$$BENCHMARK$$",
+            "index.frame": "$$FRAME$$"
+        }
+    },
+    {
+        "$project": {
+            "duration": "$result.duration",
+            "commit": "$index.commit"
+        }
+    },
+    {
+        "$group": {
+            "_id": "$commit",
+            "commit": {
+                "$first": "$commit"
+            },
+            "durations": {
+                "$push": "$duration"
+            }
+        }
+    },
+    {
+        "$lookup": {
+            "from": "repoinfo-2019-2",
+            "localField": "commit",
+            "foreignField": "commit",
+            "as": "info"
+        }
+    },
+    {
+        "$unwind": "$info"
+    },
+    {
+        "$match": {
+            "info.branches": "$$BRANCH$$"
+        }
+    },
+    {
+        "$sort": {
+            "info.authored_datetime": 1
+        }
+    }
+]

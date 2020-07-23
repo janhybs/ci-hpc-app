@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using TypeLite;
 using TypeLite.TsModels;
+using CC.Net.Db;
+using MongoDB.Bson;
 
 namespace CC.Net
 {
@@ -18,6 +20,10 @@ namespace CC.Net
     {
         public static void Main(string[] args)
         {
+            // var json = Mongo.GroupTimers("02_cube_123d", "1_15786_el", "flow_fv.yaml");
+            // var bson = json.AsBsonArray();
+            // System.Environment.Exit(0);
+
             if (args.Length > 0 && args[0] == "--generate")
             {
                 Directory.CreateDirectory("_client/src/models/");
@@ -53,10 +59,10 @@ namespace CC.Net
         public static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
             var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.secret.json", optional: true)
-            .AddCommandLine(args)
-            .Build();
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.secret.json", optional: true)
+                .AddCommandLine(args)
+                .Build();
 
             return WebHost.CreateDefaultBuilder(args)
                 .UseConfiguration(config)

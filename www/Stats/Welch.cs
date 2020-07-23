@@ -1,5 +1,6 @@
 using Accord.Statistics.Testing;
 using System;
+using System.Text.Json.Serialization;
 
 // https://docs.microsoft.com/en-us/archive/msdn-magazine/2015/november/test-run-the-t-test-using-csharp
 namespace CC.Net.Stats
@@ -18,14 +19,22 @@ namespace CC.Net.Stats
         public double PValue { get; set; }
         public bool Significant { get; set; }
         public double Statistic { get; set; }
-        public double Size { get; set; }
         public double DegreesOfFreedom { get; set; }
         public double EstimatedValue1 { get; set; }
         public double EstimatedValue2 { get; set; }
         public double CriticalValue { get; set; }
+
+        [JsonIgnore]
         public int N1 { get; set; }
+
+        [JsonIgnore]
         public int N2 { get; set; }
+        
+        [JsonIgnore]
         public int Radius { get; set; }
+
+        [JsonIgnore]
+        public double Size { get; set; }
 
         public override string ToString()
         {

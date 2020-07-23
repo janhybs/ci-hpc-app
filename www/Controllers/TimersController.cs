@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using CC.Net.Collections;
+using CC.Net.Collections.Flex;
 using CC.Net.Collections.Shared;
 using CC.Net.Db;
 using CC.Net.Dto;
@@ -40,9 +43,54 @@ namespace CC.Net.Controllers
             _indexInfo = dbService.CachedColIndexInfo;
         }
 
-
         [HttpPost]
         [Route("list")]
+        public async Task<object> ActionTest(TimersFilter filter)
+        {
+            var stopWatch = TickTock.StartNew("Json parse");
+            var json = Mongo.GroupTimers(
+                filter.info.Test,
+                filter.info.Mesh,
+                filter.info.Benchmark,
+                "whole-program",
+                filter.info.Branch
+            );
+
+            stopWatch.Start("MongoDB Aggregate");
+            var items = await _dbService.ColTimers
+                .Aggregate<GroupedTimer>(json.AsBsonArray())
+                .ToListAsync();
+
+            stopWatch.Start("Welch Compute");
+            TimerUtils.ComputeWelch(items);
+            TimerUtils.SmoothDetections(items);
+
+            stopWatch.Start("Transform Timer");
+            var result = items
+                .Select(i => new SimpleTimers
+                {
+                    Durations = i.Durations.ToArray(),
+                    Commit = i.Commit,
+                    Branch = i.Info.Branch,
+                    Welch = i.Welch,
+                    Left = i.Left,
+                    Right = i.Right,
+                    Info = GitInfo.From(i.Info),
+                    isBroken = false,})
+                .ToList();
+            
+            stopWatch.Stop();
+
+            return new
+            {
+                Data = result,
+                Ratio = 0.2
+            };
+        }
+
+
+        [HttpPost]
+        [Route("list2")]
         public object ActionList(TimersFilter filter)
         {
             // var cmd = @"

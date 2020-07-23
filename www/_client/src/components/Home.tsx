@@ -13,12 +13,19 @@ export class Home extends Component {
   render() {
     return (
       <div className="row">
-        {configurations.map((configuration, i) =>
-          <div key={i} className="chart-wrapper col col-lg-4">
+        {configurations.map((configuration, i) => {
+
+          const newcfg = {
+            ...configuration,
+            branch: "master"
+          };
+
+          return <div key={i} className="chart-wrapper col col-lg-4">
             <div className="chart-inner">
               <Link to={`/benchmarks/${i}`}>
                 <BenchmarkView
-                  size="small" configuration={configuration}
+                  size="small"
+                  configuration={newcfg}
                   simple
                   hideXTicks
                   hideBroken={false}
@@ -26,7 +33,7 @@ export class Home extends Component {
               </Link>
             </div>
           </div>
-        )}
+        })}
       </div>
     );
   }

@@ -1,0 +1,14 @@
+[
+    {
+        "$group": {
+            "_id": {
+                "project": "$index.project",
+                "test": "$index.test",
+                "benchmark": "$index.benchmark",
+                "mesh": "$index.mesh",
+                "cpus": "$index.cpus",
+                "frame": "$index.frame"
+            }
+        }
+    }
+]
