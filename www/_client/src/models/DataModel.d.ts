@@ -71,6 +71,17 @@
 		commit: IColRepoInfo;
 		runs: IColIndexInfoRun[];
 	}
+	export interface IDurInfo {
+		avg: number;
+		max: number;
+		min: number;
+		n: number;
+	}
+	export interface IDurInfoWrapper {
+		duration: IDurInfo;
+		frame: string;
+		path: string;
+	}
 	export interface IIndexInfo {
 		benchmark: string;
 		branch: string;
@@ -133,6 +144,18 @@
 		significant: boolean;
 		size: number;
 		statistic: number;
+	}
+	export interface ICompareCommitDto {
+		commitA: IDurInfoWrapper[];
+		commitB: IDurInfoWrapper[];
+		rootA: IDurInfoWrapper;
+		rootB: IDurInfoWrapper;
+	}
+	export interface ICompareCommitFilter {
+		commitA: string;
+		commitB: string;
+		frame: string;
+		info: IIndexInfo;
 	}
 	export interface ISchedulerFilter {
 		limit: number;

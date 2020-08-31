@@ -39,6 +39,9 @@ namespace CC.Net
 
                         .For<SchedulerFilter>()
                         .For<TimersFilter>()
+                        .For<CompareCommitFilter>()
+                        .For<CompareCommitDto>()
+                        .For<DurInfoWrapper>()
 
                         .WithVisibility((a, b) => true)
                         .WithMemberTypeFormatter(MemberTypeFormatter)

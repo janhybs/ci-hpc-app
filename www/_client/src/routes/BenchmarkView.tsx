@@ -3,7 +3,7 @@ import React from "react";
 import { observer } from "mobx-react"
 import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
-import { ITimersFilter, IIndexInfo, ISimpleTimers, ISimpleTimersEx } from "../models/DataModel";
+import { ITimersFilter, IIndexInfo, ISimpleTimers, ISimpleTimersEx, ICompareCommitFilter, ICompareCommitDto, IDurInfo } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -32,43 +32,7 @@ addHighchartsMore(Highcharts);
 const defaultFormat = (i: any) => i.toFixed(2);
 
 
-const noFormat = i => i;
-const flow123dCommitUrl = "https://github.com/flow123d/flow123d/commit/";
 const outlierCoef = 0.25;
-const maxCommitByDefault = 100;
-
-interface IOutlier {
-    x: string;
-    y: number;
-}
-
-const filterBranches = (branches: string[]) =>
-    branches.filter(i => i != "HEAD");
-
-class Prop {
-    constructor(public key: string, public title?: string, public format = defaultFormat) {
-        this.title = this.title || this.key;
-        this.title = this.title.substr(0, 1).toUpperCase() + this.title.substr(1);
-    }
-    public prop(o: any) {
-        const keys = this.key.split(".");
-        let c = o;
-        try {
-            keys.forEach(i => c = c[i]);
-            return c;
-        } catch (error) {
-            return null;
-        }
-    }
-}
-
-
-const checkOutliers = (item: ISimpleTimersEx) => {
-    const j = item as Required<ISimpleTimersEx>;
-    const low = j.median - j.low > j.median * outlierCoef;
-    const high = j.high - j.median > j.median * outlierCoef;
-    return { low, high };
-}
 
 interface BenchmarkViewState {
     model: BenchmarkViewModel;
@@ -92,12 +56,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     public model = new BenchmarkViewModel()
 
-    private data: any[] = []
-    private outliers: IOutlier[] = [];
-
-    @observable
-    private ratio: number = NaN;
-
     @observable
     private showBroken = false;
 
@@ -116,6 +74,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     private selectedBranch: string = "master";
 
     private setTimer: any;
+
+    @observable
+    private commitQueue: string[] = [];
+
+    @observable
+    private stackChart: any = null;
 
     constructor(state) {
         super(state);
@@ -138,20 +102,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             .then((json: any) => {
 
                 let rawData = json.data as ISimpleTimers[];
-                this.ratio = json.ratio;
 
                 if (this.props.hideBroken === true) {
                     rawData = rawData
                         .filter(i => i.isBroken === false);
                 }
 
-                /*const sortedData = rawData.sort((b, a) => {
-                    const dateB = b.info ? new Date(b.info.date as any).getTime() : 0;
-                    const dateA = a.info ? new Date(a.info.date as any).getTime() : 0;
-                    return dateB - dateA;
-                });*/
-
-                //const { data, outliers } = this.fixData(rawData);
                 const data: ISimpleTimersEx[] = rawData.map(
                     i => {
                         const dur = i.durations || [0, 0, 0];
@@ -168,9 +124,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         }
                     }
                 )
-
-                //this.data = data;
-                //this.outliers = outliers
 
                 this.model.items = data;
                 this.model.ratio = json.ratio;
@@ -198,6 +151,80 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         }
     }
 
+    compareCommitsDefault() {
+        this.compareCommits(this.commitQueue[0], this.commitQueue[1], '/whole-program');
+    }
+
+    compareCommits(commitA: string, commitB: string, frame: string) {
+        const filter: ICompareCommitFilter = {
+            info: this.model.configuration,
+            commitA: commitA,
+            commitB: commitB,
+            frame: frame,
+        };
+        const that = this;
+        httpClient.fetch<ICompareCommitDto>("compare-commit/compare-ab", filter)
+            .then(i => {
+                const framesA = i.commitA.map(j => j.frame);
+                const framesB = i.commitB.map(j => j.frame);
+
+                // assuming framesA.length == framesB.length;
+                
+                const frameAData = framesA.map((j, k) => {
+                    return {
+                        stack: 'A',
+                        name: j,
+                        data: [
+                            i.commitA[k].duration.avg,
+                            i.commitB[k].duration.avg
+                        ],
+                    }
+                });
+                const d: Highcharts.Options = {
+                    title: {
+                        text: undefined,
+                    },
+                    chart: {
+                        type: "column",
+                        height: 600,
+                    },
+                    xAxis: {
+                        categories: [
+                            `${filter.commitA.substr(0,6)} [${i.rootA.duration.avg.toFixed(3)} sec]`,
+                            `${filter.commitB.substr(0,6)} [${i.rootB.duration.avg.toFixed(3)} sec]`,
+                        ]
+                    },
+                    plotOptions: {
+                        series: {
+                            events: {
+                                click: function() {
+                                    that.compareCommits(
+                                        filter.commitA, filter.commitB,
+                                        `${filter.frame}/${this.name}`
+                                    );
+                                }
+                            }
+                        },
+                        column: {
+                            stacking: 'normal',
+                        }
+                    },
+                    series: [...frameAData as any],
+                };
+                this.stackChart = {options: d, filter: filter};
+            });
+    }
+
+    @action.bound
+    rememberCommit(commit: string) {
+        if (this.commitQueue.includes(commit)) {
+            return;
+        }
+
+        this.commitQueue.push(commit);
+        this.commitQueue = this.commitQueue.slice(-2);
+    }
+
     render() {
         const { commitFilter, model, showBroken, oldCommitSha, selectedBranch } = this;
         const configurationName = getConfigurationName(model.configuration);
@@ -209,24 +236,12 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
 
         const handleClick = (timer: ISimpleTimers) => {
+            this.rememberCommit(timer.commit);
             if (!this.setTimer) {
                 return;
             }
             this.setTimer(timer);
             this.timerLocked = !this.timerLocked;
-            /*
-            const newCommitSha = timer.commit;
-            this.setTimer(timer);
-            if(detailMode && newCommitSha === oldCommitSha) {
-                this.oldCommitSha = "";
-                this.commitFilter = [];
-            } else {
-                this.oldCommitSha = timer.commit;
-                this.commitFilter = [
-                    ...(timer.left || []),
-                    ...(timer.right || []),
-                ];
-            }*/
         }
 
         const handleHover = (timer: ISimpleTimers) => {
@@ -253,7 +268,33 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             ]);
 
         return <>
-
+            <Row>
+                <Col>
+                    <Button disabled={this.commitQueue.length <= 1} onClick={() => this.compareCommitsDefault()}>
+                        Compare Commits {this.commitQueue.map(i => i.substr(0,6)).join(', ')}
+                    </Button>
+                </Col>
+            </Row>
+            {this.stackChart !== null && <>
+                <Row>
+                    <ButtonGroup>
+                        {(this.stackChart.filter.frame as string)
+                            .split("/")
+                            .map((i, j) => <Button onClick={() => this.compareCommits(
+                                this.stackChart.filter.commitA,
+                                this.stackChart.filter.commitB,
+                                `${this.stackChart.filter.frame.split("/").slice(0, j+1).join('/')}`
+                            )}>
+                                {i}
+                            </Button>)}
+                    </ButtonGroup>
+                </Row>
+                <Row>
+                    <HighchartsReact
+                        highcharts={Highcharts}
+                        options={this.stackChart.options}/>
+                </Row>
+            </>}
             {!simple &&
                 <Row>
                     <ButtonToolbar>
