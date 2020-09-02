@@ -42,6 +42,7 @@ namespace CC.Net
                         .For<CompareCommitFilter>()
                         .For<CompareCommitDto>()
                         .For<DurInfoWrapper>()
+                        .For<CommitBaseline>()
 
                         .WithVisibility((a, b) => true)
                         .WithMemberTypeFormatter(MemberTypeFormatter)

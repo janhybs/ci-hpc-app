@@ -2,10 +2,14 @@ name: flow123d
 before-run: !readfile utils/setup_env.sh
 
 baselines:
-  - commit: b6fa18e97a9f0f2f150f3181846d154f83cee376
+  - commit: 6b54fcf046d36cb37bfcc53bd6e613eca1459bda
     title: 3.0.0
-  - commit: d4ae02d538d49f866df002e3ede834a86c5a82fa
-    title: 3.0.1
+  - commit: b04af7fb08d423036b30ea00c3b8941b0c91e3c0
+    title: 2.2.1
+  - commit: f72c4b41f40db374168cc91ca59e6e7d87555596
+    title: 3.0.2
+  - commit: 4db4b481073edc73c22031aeb86c31c9b633025a
+    title: 3.0.4
 
 git:
   - https://github.com/flow123d/flow123d.git

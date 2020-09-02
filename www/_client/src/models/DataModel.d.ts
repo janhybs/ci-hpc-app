@@ -145,6 +145,10 @@
 		size: number;
 		statistic: number;
 	}
+	export interface ICommitBaseline {
+		commit: string;
+		name: string;
+	}
 	export interface ICompareCommitDto {
 		commitA: IDurInfoWrapper[];
 		commitB: IDurInfoWrapper[];

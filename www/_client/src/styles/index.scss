@@ -31,7 +31,7 @@ html {
 }
 
 .box-shadow {
-    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
 }
 
 code.tiny {
@@ -40,4 +40,15 @@ code.tiny {
 
 code.small {
     font-size: 0.75rem;
+}
+
+.simple-select {
+    > .MuiSelect-select {
+        padding: 4px 36px 4px 10px;
+    }
+}
+
+.radiustlbl > fieldset {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
 }

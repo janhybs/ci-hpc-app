@@ -3,14 +3,15 @@ import React from "react";
 import { observer } from "mobx-react"
 import { observable, action } from "mobx"
 import { httpClient, configurations } from "../init";
-import { ITimersFilter, IIndexInfo, ISimpleTimers, ISimpleTimersEx, ICompareCommitFilter, ICompareCommitDto, IDurInfo } from "../models/DataModel";
+import { IIndexInfo, ISimpleTimers, ISimpleTimersEx, ICompareCommitFilter, ICompareCommitDto, IDurInfo } from "../models/DataModel";
 import Dropdown from 'react-bootstrap/Dropdown'
 import { DropdownButton, Button, ButtonToolbar, ButtonGroup, Alert, Row } from "react-bootstrap";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRedo } from '@fortawesome/free-solid-svg-icons'
 import Color from "color"
 
-import moment from "moment";
+import { Button as MuiButton, ButtonGroup as MuiButtonGroup, DialogTitle, DialogContent } from '@material-ui/core';
+
 import "../styles/chart.css";
 
 import HighchartsReact from 'highcharts-react-official';
@@ -18,12 +19,13 @@ import Highcharts from 'highcharts/highstock';
 import addHighchartsMore from 'highcharts/highcharts-more';
 import { NotificationApi } from "../utils/Notification";
 import { SimpleLoader } from "../components/SimpleLoader";
-import { getOptions, registerOptions } from "./BenchmarkView.Options";
 import { BenchmarkViewModel, getConfigurationName, trimSha } from "./BenchmarkView.Model";
-import { BenchmarkViewChart, DD } from "./BenchmarkView.Chart";
-import { Col } from "reactstrap";
 import { RenderStats } from "./BenchmarView.Stats";
 import { countUnique } from "../utils/MapUtils";
+import { BenchmarkToolbar } from "./BenchmarkToolbar";
+import { Col, ModalHeader } from "reactstrap";
+import { BenchmarkViewChart } from "./BenchmarkView.Chart";
+import { Modal, Dialog } from "@material-ui/core";
 addHighchartsMore(Highcharts);
 
 
@@ -80,6 +82,8 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
     @observable
     private stackChart: any = null;
+
+    setCommits?(commits: string[]): void;
 
     constructor(state) {
         super(state);
@@ -169,7 +173,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                 const framesB = i.commitB.map(j => j.frame);
 
                 // assuming framesA.length == framesB.length;
-                
+
                 const frameAData = framesA.map((j, k) => {
                     return {
                         stack: 'A',
@@ -190,14 +194,14 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     },
                     xAxis: {
                         categories: [
-                            `${filter.commitA.substr(0,6)} [${i.rootA.duration.avg.toFixed(3)} sec]`,
-                            `${filter.commitB.substr(0,6)} [${i.rootB.duration.avg.toFixed(3)} sec]`,
+                            `${filter.commitA.substr(0, 6)} [${i.rootA.duration.avg.toFixed(3)} sec]`,
+                            `${filter.commitB.substr(0, 6)} [${i.rootB.duration.avg.toFixed(3)} sec]`,
                         ]
                     },
                     plotOptions: {
                         series: {
                             events: {
-                                click: function() {
+                                click: function () {
                                     that.compareCommits(
                                         filter.commitA, filter.commitB,
                                         `${filter.frame}/${this.name}`
@@ -211,7 +215,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     },
                     series: [...frameAData as any],
                 };
-                this.stackChart = {options: d, filter: filter};
+                this.stackChart = { options: d, filter: filter };
             });
     }
 
@@ -223,6 +227,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
         this.commitQueue.push(commit);
         this.commitQueue = this.commitQueue.slice(-2);
+        if (this.setCommits != null) {
+            this.setCommits(this.commitQueue);
+        }
     }
 
     render() {
@@ -248,7 +255,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
             if (!this.setTimer) {
                 return;
             }
-            
+
             if (!this.timerLocked) {
                 this.setTimer(timer);
             }
@@ -265,102 +272,108 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                     .flatMap(i => i.info?.branches || [])
                     .filter(i => i != null))
                 .entries()
-            ]);
+        ]);
 
         return <>
-            <Row>
-                <Col>
-                    <Button disabled={this.commitQueue.length <= 1} onClick={() => this.compareCommitsDefault()}>
-                        Compare Commits {this.commitQueue.map(i => i.substr(0,6)).join(', ')}
-                    </Button>
-                </Col>
-            </Row>
-            {this.stackChart !== null && <>
+            {true && <>
+                {!simple &&
+                    <>
+                        <BenchmarkToolbar
+                            onInit={setCommits => this.setCommits = setCommits}
+                            onCompareCommits={(a, b) => this.compareCommits(a, b, "/whole-program/application-run")}
+                        />
+                        {this.stackChart !== null && <>
+                            <Dialog
+                                open={this.stackChart !== null}
+                                onClose={() => this.stackChart = null}
+                                fullWidth={true} maxWidth={"lg"}>
+                                <DialogTitle>
+                                    <MuiButtonGroup size="small">
+                                        {(this.stackChart.filter.frame as string)
+                                            .split("/")
+                                            .map((i, j) => <MuiButton key={j} onClick={() => this.compareCommits(
+                                                this.stackChart.filter.commitA,
+                                                this.stackChart.filter.commitB,
+                                                `${this.stackChart.filter.frame.split("/").slice(0, j + 1).join('/')}`
+                                            )}>
+                                                {i || "/"}
+                                            </MuiButton>)}
+                                    </MuiButtonGroup>
+                                </DialogTitle>
+                                <DialogContent dividers>
+                                    <HighchartsReact
+                                        highcharts={Highcharts}
+                                        options={this.stackChart.options} />
+                                </DialogContent>
+                            </Dialog>
+                        </>}
+                        <Row>
+                            <ButtonToolbar>
+                                <ButtonGroup>
+                                    <Button variant="dark" onClick={(i) => this.load()}>
+                                        <FontAwesomeIcon icon={faRedo} />
+                                    </Button>
+                                    <DropdownButton id="dropdown-basic-button"
+                                        title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
+                                        {configurations.map((item, j) =>
+                                            <Dropdown.Item
+                                                key={getConfigurationName(item)}
+                                                onSelect={i => {
+                                                    this.switchConfig(item);
+                                                    (this.props as any).history.push(`/benchmarks/${j}`);
+                                                }}
+                                                active={configurationName === getConfigurationName(item)}
+                                            >
+                                                {getConfigurationName(item)}
+                                            </Dropdown.Item>
+                                        )}
+                                    </DropdownButton>
+                                </ButtonGroup>
+                                <Button onClick={() => this.showBroken = !showBroken}>
+                                    Toggle broken builds
+                        </Button>
+                                <DropdownButton
+                                    id="dropdown-branch"
+                                    title={selectedBranch ? selectedBranch : "<Select branch>"}
+                                    value={selectedBranch}
+                                >
+                                    {[...branches.entries()]
+                                        .slice(0, 55)
+                                        .map(i => {
+                                            return <Dropdown.Item key={i[0]}
+                                                onSelect={() => this.changeBranch(i[0])}>
+                                                {i[0]} ({i[1]} cmts)
+                                    </Dropdown.Item>
+                                        })}
+
+                                </DropdownButton>
+                            </ButtonToolbar>
+                        </Row>
+                    </>
+                }
                 <Row>
-                    <ButtonGroup>
-                        {(this.stackChart.filter.frame as string)
-                            .split("/")
-                            .map((i, j) => <Button onClick={() => this.compareCommits(
-                                this.stackChart.filter.commitA,
-                                this.stackChart.filter.commitB,
-                                `${this.stackChart.filter.frame.split("/").slice(0, j+1).join('/')}`
-                            )}>
-                                {i}
-                            </Button>)}
-                    </ButtonGroup>
-                </Row>
-                <Row>
-                    <HighchartsReact
-                        highcharts={Highcharts}
-                        options={this.stackChart.options}/>
+                    <Col lg={isSmall ? 12 : 9}>
+                        <BenchmarkViewChart
+                            commitFilter={commitFilter}
+                            hideTitle={hideTitle === true}
+                            isSmall={isSmall}
+                            model={model}
+                            showBroken={showBroken}
+                            detailCommit={oldCommitSha}
+                            selectedBranch={selectedBranch}
+                            onClick={timer => handleClick(timer)}
+                            onHover={timer => handleHover(timer)}
+                        />
+                    </Col>
+                    {!isSmall &&
+                        <Col lg={3}>
+                            <RenderStats
+                                onInit={setTimer => this.setTimer = setTimer}
+                                timers={data}
+                            />
+                        </Col>}
                 </Row>
             </>}
-            {!simple &&
-                <Row>
-                    <ButtonToolbar>
-                        <ButtonGroup>
-                            <Button variant="dark" onClick={(i) => this.load()}>
-                                <FontAwesomeIcon icon={faRedo} />
-                            </Button>
-                            <DropdownButton id="dropdown-basic-button"
-                                title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
-                                {configurations.map((item, j) =>
-                                    <Dropdown.Item
-                                        key={getConfigurationName(item)}
-                                        onSelect={i => {
-                                            this.switchConfig(item);
-                                            (this.props as any).history.push(`/benchmarks/${j}`);
-                                        }}
-                                        active={configurationName === getConfigurationName(item)}
-                                    >
-                                        {getConfigurationName(item)}
-                                    </Dropdown.Item>
-                                )}
-                            </DropdownButton>
-                        </ButtonGroup>
-                        <Button onClick={() => this.showBroken = !showBroken}>
-                            Toggle broken builds
-                        </Button>
-                        <DropdownButton
-                            id="dropdown-branch"
-                            title={selectedBranch ? selectedBranch : "<Select branch>"}
-                            value={selectedBranch}
-                            >
-                            {[...branches.entries()]
-                                .slice(0, 55)
-                                .map(i => {
-                                    return <Dropdown.Item key={i[0]}
-                                        onSelect={() => this.changeBranch(i[0])}>
-                                        {i[0]} ({i[1]} cmts)
-                                    </Dropdown.Item>
-                            })}
-                            
-                        </DropdownButton>
-                    </ButtonToolbar>
-                </Row>
-            }
-            <Row>
-                <Col lg={isSmall ? 12 : 9}>
-                    <BenchmarkViewChart
-                        commitFilter={commitFilter}
-                        hideTitle={hideTitle === true}
-                        isSmall={isSmall}
-                        model={model}
-                        showBroken={showBroken}
-                        detailCommit={oldCommitSha}
-                        selectedBranch={selectedBranch}
-                        onClick={timer => handleClick(timer)}
-                        onHover={timer => handleHover(timer)}
-                    />
-                </Col>
-                {!isSmall &&
-                    <Col lg={3}>
-                        <RenderStats
-                            onInit={setTimer => this.setTimer = setTimer}
-                            timers={data}
-                        />
-                    </Col>}
-            </Row>
         </>
     }
 }
