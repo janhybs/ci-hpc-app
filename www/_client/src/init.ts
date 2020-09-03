@@ -80,8 +80,8 @@ export const configurations: IIndexInfo[] = [
 
 
 export const baselines: ICommitBaseline[] = [
-    { commit: "4db4b481073edc73c22031aeb86c31c9b633025a", name: "v3.0.4" },
-    { commit: "f72c4b41f40db374168cc91ca59e6e7d87555596", name: "v3.0.2" },
-    { commit: "b04af7fb08d423036b30ea00c3b8941b0c91e3c0", name: "v2.2.1" },
-    { commit: "6b54fcf046d36cb37bfcc53bd6e613eca1459bda", name: "v3.0.0" },
+    { value: "4db4b481073edc73c22031aeb86c31c9b633025a", name: "v3.0.4" },
+    { value: "f72c4b41f40db374168cc91ca59e6e7d87555596", name: "v3.0.2" },
+    { value: "b04af7fb08d423036b30ea00c3b8941b0c91e3c0", name: "v2.2.1" },
+    { value: "6b54fcf046d36cb37bfcc53bd6e613eca1459bda", name: "v3.0.0" },
 ];

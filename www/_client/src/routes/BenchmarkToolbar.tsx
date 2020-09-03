@@ -1,45 +1,96 @@
 import React from "react";
-import { Button, ButtonGroup, Select, MenuItem, FormControl, Box } from '@material-ui/core';
+import { Button, ButtonGroup, Box, Toolbar, AppBar } from '@material-ui/core';
 import { baselines } from "../init";
+import { SplitButton } from "../components/SplitButton";
+import { IIndexInfo } from "../models/DataModel";
+import { getConfigurationName } from "./BenchmarkView.Model";
+import { DropDownButton } from "../components/DropDownButton";
 
+interface INameValue {
+    name: string;
+    value: any;
+}
 
 export interface BenchmarkToolbarProps {
     onInit(setCommits: (commits: string[]) => void): void;
     onCompareCommits(a: string, b: string): void;
+
+    configurations: IIndexInfo[];
+    defaultConfiguration?: number;
+    onConfigurationChange(cfg: IIndexInfo): void;
+    
+    branches: INameValue[];
+    defaultBranch?: number;
+    onBranchChange(br: INameValue): void;
 }
 
 export const BenchmarkToolbar = (props: BenchmarkToolbarProps) => {
     const { onInit, onCompareCommits } = props;
-    const [cmts, setCmts] = React.useState<string[]>([]);
-    const [baseline, setBaseline] = React.useState<string>(baselines[0].commit);
-    const cmtA = cmts.reverse()[0] || 'x';
-    const cmtB = cmts.reverse()[1] || 'x';
+    const { configurations, defaultConfiguration, onConfigurationChange } = props;
+    const { branches, defaultBranch, onBranchChange } = props;
 
-    const handleChange = (event) => {
-        setBaseline(event.target.value);
-      };
+    const [cmts, setCmts] = React.useState<string[]>([]);
+    const [baseline, setBaseline] = React.useState(baselines[0].value);
+    const [configuration, setConfiguration] = React.useState(configurations[defaultConfiguration || 0]);
+    const [branch, setBranch] = React.useState(branches[defaultBranch || 0]);
+
+    const cmtA = cmts.reverse()[0];
+    const cmtB = cmts.reverse()[1];
+    const cmtAText = cmtA || 'no selection';
+    const cmtBText = cmtB || 'no selection';
+
+    const handleConfigurationChange = (cfg: IIndexInfo) => {
+        setConfiguration(cfg);
+        onConfigurationChange(cfg);
+    }
+
+    const handleBranchChange = (br: INameValue) => {
+        setBranch(br);
+        onBranchChange(br);
+    }
 
     onInit(commits => setCmts(commits));
 
-    return <div style={{marginBottom: "1em"}}>
-        <ButtonGroup>
-            <Button variant="contained" color="primary" disabled={cmts.length < 2}
-                onClick={() => onCompareCommits(cmtA, cmtB)}
-                >Compare selected commits
-            </Button>
-            <Button disabled>{cmtA.substr(0, 6)}</Button>
-            <Button disabled>{cmtB.substr(0, 6)}</Button>
-        </ButtonGroup>
-
-        <ButtonGroup>
-            <Button variant="contained" color="secondary" disabled={cmts.length < 1}
-                onClick={() => onCompareCommits(cmtA, baseline)}
-                >Compare with baseline
-            </Button>
-            <Button disabled>{cmtA.substr(0, 6)}</Button>
-            <Select color="secondary" value={baseline} onChange={handleChange} className="simple-select radiustlbl">
-                {baselines.map(i => <MenuItem key={i.commit} value={i.commit}>{i.name} ({i.commit.substr(0, 6)})</MenuItem>)}
-            </Select>
-        </ButtonGroup>
+    return <div style={{ marginBottom: "1em" }}>
+        <AppBar position="static">
+            <Toolbar variant="regular">
+                <ButtonGroup className="mr-2">
+                    <Button color="inherit" size="small" variant="text"
+                        className={`${cmts.length < 2 ? "cursor-cross " : ""}`}
+                        onClick={() => onCompareCommits(cmtA, cmtB)}>
+                        <Box display="flex" flexDirection="column">
+                            <span>Compare selected commits</span>
+                            {/* <span className="small">{cmtAText.substr(0, 12)} | {cmtBText.substr(0, 12)}</span> */}
+                        </Box>
+                    </Button>
+                </ButtonGroup>
+                <ButtonGroup className="mr-2">
+                    <SplitButton
+                        onClick={() => onCompareCommits(cmtA, baseline)}
+                        className={`${cmts.length < 1 ? "cursor-cross " : ""}`}
+                        title="Compare with baseline"
+                        optionsTitle="Choose baseline commit"
+                        options={baselines}
+                        onChange={cmt => setBaseline(cmt.value)}
+                    />
+                </ButtonGroup>
+                <ButtonGroup className="mr-2">
+                    <DropDownButton
+                        optionsTitle="Select configuration"
+                        defaultIndex={defaultConfiguration || 0}
+                        onChange={item => handleConfigurationChange(item.value)}
+                        options={configurations.map(i => { return { value: i, name: getConfigurationName(i)} })}
+                    />
+                </ButtonGroup>
+                <ButtonGroup className="mr-2">
+                    <DropDownButton
+                        optionsTitle="Select Branch"
+                        defaultIndex={defaultBranch || 0}
+                        onChange={item => handleBranchChange(item)}
+                        options={branches}
+                    />
+                </ButtonGroup>
+            </Toolbar>
+        </AppBar>
     </div>
 }

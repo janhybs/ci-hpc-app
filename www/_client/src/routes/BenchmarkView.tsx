@@ -83,6 +83,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     @observable
     private stackChart: any = null;
 
+    private configurationIndex?: number;
+    private branchIndex: number = 0;
+
     setCommits?(commits: string[]): void;
 
     constructor(state) {
@@ -90,6 +93,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
 
         const match = (this.props as any).match;
         const index = match ? match.params.index : null;
+        this.configurationIndex = index ? Number(index) : undefined;
 
         if (this.props.configuration != null) {
             this.model.configuration = this.props.configuration
@@ -138,7 +142,9 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     }
 
     switchConfig(item: IIndexInfo) {
+        const branch = this.model.configuration.branch;
         this.model.configuration = item;
+        this.model.configuration.branch = branch;
         this.load();
     }
 
@@ -160,6 +166,10 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
     }
 
     compareCommits(commitA: string, commitB: string, frame: string) {
+        if (!commitA || !commitB) {
+            return;
+        }
+
         const filter: ICompareCommitFilter = {
             info: this.model.configuration,
             commitA: commitA,
@@ -266,11 +276,11 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
         }
 
         const branches = new Map([
-            ["", data.length],
+            // ["", data.length],
             ...countUnique(
                 data.filter(i => i.isBroken === false)
                     .flatMap(i => i.info?.branches || [])
-                    .filter(i => i != null))
+                    .filter(i => i != null && i != "HEAD"))
                 .entries()
         ]);
 
@@ -281,6 +291,18 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                         <BenchmarkToolbar
                             onInit={setCommits => this.setCommits = setCommits}
                             onCompareCommits={(a, b) => this.compareCommits(a, b, "/whole-program/application-run")}
+                            configurations={configurations}
+                            defaultConfiguration={this.configurationIndex}
+                            onConfigurationChange={cfg => {
+                                this.configurationIndex = configurations.indexOf(cfg);
+                                this.switchConfig(cfg);
+                                (this.props as any).history.push(`/benchmarks/${this.configurationIndex}`);
+                            }}
+
+                            branches={[...branches.entries()]
+                                .map(i => { return { name: `${i[0]} ${i[1]}`, value: i[0] } })}
+                            defaultBranch={this.branchIndex}
+                            onBranchChange={(br) => this.changeBranch(br.value)}
                         />
                         {this.stackChart !== null && <>
                             <Dialog
@@ -307,48 +329,6 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                                 </DialogContent>
                             </Dialog>
                         </>}
-                        <Row>
-                            <ButtonToolbar>
-                                <ButtonGroup>
-                                    <Button variant="dark" onClick={(i) => this.load()}>
-                                        <FontAwesomeIcon icon={faRedo} />
-                                    </Button>
-                                    <DropdownButton id="dropdown-basic-button"
-                                        title={`${configurationName} [${data.length} commits]`} as={ButtonGroup}>
-                                        {configurations.map((item, j) =>
-                                            <Dropdown.Item
-                                                key={getConfigurationName(item)}
-                                                onSelect={i => {
-                                                    this.switchConfig(item);
-                                                    (this.props as any).history.push(`/benchmarks/${j}`);
-                                                }}
-                                                active={configurationName === getConfigurationName(item)}
-                                            >
-                                                {getConfigurationName(item)}
-                                            </Dropdown.Item>
-                                        )}
-                                    </DropdownButton>
-                                </ButtonGroup>
-                                <Button onClick={() => this.showBroken = !showBroken}>
-                                    Toggle broken builds
-                        </Button>
-                                <DropdownButton
-                                    id="dropdown-branch"
-                                    title={selectedBranch ? selectedBranch : "<Select branch>"}
-                                    value={selectedBranch}
-                                >
-                                    {[...branches.entries()]
-                                        .slice(0, 55)
-                                        .map(i => {
-                                            return <Dropdown.Item key={i[0]}
-                                                onSelect={() => this.changeBranch(i[0])}>
-                                                {i[0]} ({i[1]} cmts)
-                                    </Dropdown.Item>
-                                        })}
-
-                                </DropdownButton>
-                            </ButtonToolbar>
-                        </Row>
                     </>
                 }
                 <Row>
