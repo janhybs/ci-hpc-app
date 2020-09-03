@@ -300,7 +300,7 @@ export class BenchmarkView extends React.Component<BenchmarkViewProps, Benchmark
                             }}
 
                             branches={[...branches.entries()]
-                                .map(i => { return { name: `${i[0]} ${i[1]}`, value: i[0] } })}
+                                .map(i => { return { name: `${i[0]} (${i[1]} commits)`, value: i[0] } })}
                             defaultBranch={this.branchIndex}
                             onBranchChange={(br) => this.changeBranch(br.value)}
                         />

@@ -56,7 +56,7 @@ export const BenchmarkToolbar = (props: BenchmarkToolbarProps) => {
             <Toolbar variant="regular">
                 <ButtonGroup className="mr-2">
                     <Button color="inherit" size="small" variant="text"
-                        className={`${cmts.length < 2 ? "cursor-cross " : ""}`}
+                        disabled={cmts.length < 2}
                         onClick={() => onCompareCommits(cmtA, cmtB)}>
                         <Box display="flex" flexDirection="column">
                             <span>Compare selected commits</span>
@@ -67,7 +67,7 @@ export const BenchmarkToolbar = (props: BenchmarkToolbarProps) => {
                 <ButtonGroup className="mr-2">
                     <SplitButton
                         onClick={() => onCompareCommits(cmtA, baseline)}
-                        className={`${cmts.length < 1 ? "cursor-cross " : ""}`}
+                        disabled={cmts.length < 1}
                         title="Compare with baseline"
                         optionsTitle="Choose baseline commit"
                         options={baselines}

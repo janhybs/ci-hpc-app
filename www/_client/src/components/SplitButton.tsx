@@ -23,10 +23,11 @@ interface SplitButtonParams {
     onChange(newValue: INameValue): void;
     onClick(): void;
     className?: string;
+    disabled? :boolean;
 }
 
 export const SplitButton = (params: SplitButtonParams) => {
-    const { title, options, optionsTitle, onChange, onClick, className } = params;
+    const { title, options, optionsTitle, onChange, onClick, className, disabled } = params;
     const [open, setOpen] = React.useState(false);
     const anchorRef = React.useRef(null);
     const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -57,7 +58,7 @@ export const SplitButton = (params: SplitButtonParams) => {
         <Grid container direction="column" alignItems="center">
             <Grid item xs={12}>
                 <ButtonGroup variant="text" color="inherit" ref={anchorRef} aria-label="split button">
-                    <Button onClick={handleClick} className={className}>{title}</Button>
+                    <Button onClick={handleClick} disabled={disabled === true} className={className}>{title}</Button>
                     <Button
                         aria-controls={open ? 'split-button-menu' : undefined}
                         aria-expanded={open ? 'true' : undefined}
