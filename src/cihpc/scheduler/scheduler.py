@@ -30,4 +30,4 @@ if __name__ == '__main__':
         project_config=project_config
     )
     repo.to_latest()
-    repo.schedule_runs()
+    repo.schedule_runs(max_per_branch=args.per_branch)

@@ -83,8 +83,8 @@ class RepoUtil:
                 logger.debug(
                     f"Already scheduled {scheduled_already} runs, which is more than enough:\n{test_job.pretty_index}")
 
-    def schedule_runs(self, branches=None, job_name: str = "test"):
-        for branch_commit in self.get_commits(branches, max_per_branch=30):
+    def schedule_runs(self, branches=None, job_name: str = "test", max_per_branch=10):
+        for branch_commit in self.get_commits(branches, max_per_branch=max_per_branch):
             runs = self.schedule_run(
                 str(branch_commit.commit),
                 branch_commit.branch.head.remote_head,
