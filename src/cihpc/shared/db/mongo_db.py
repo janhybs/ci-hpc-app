@@ -30,7 +30,7 @@ class MongoCollection:
         self._factory = factory
         self.name = collection.name
 
-    def find(self, index: MatchType, projection: List = None, raw=False, **kwargs) -> List[AllColTypes]:
+    def find(self, index: MatchType, projection: List = None, raw = False, alter_cursor: callable = None, **kwargs) -> List[AllColTypes]:
         match = dict()
         for k, v in index.items():
             if v is not None or raw:
@@ -39,7 +39,11 @@ class MongoCollection:
                 else:
                     match[f"{k}"] = v
 
-        for item in self._collection.find(match or {}, projection):
+        cursor = self._collection.find(match or {}, projection)
+        if alter_cursor is not None:
+            alter_cursor(cursor)
+
+        for item in cursor:
             yield self._factory.from_dict(item)
 
     def insert(self, value: AllColTypes, **kwargs):

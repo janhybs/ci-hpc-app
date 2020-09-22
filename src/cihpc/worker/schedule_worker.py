@@ -15,6 +15,12 @@ from cihpc.shared.db.timer_index import TimerIndex
 from cihpc.shared.g import G
 from cihpc.shared.utils import data_util
 
+
+ASCENDING = 1
+"""Ascending sort order."""
+DESCENDING = -1
+"""Descending sort order."""
+
 if __name__ == '__main__':
     args = parse_scheduler_args()
 
@@ -28,7 +34,7 @@ if __name__ == '__main__':
     cursor = Mongo().col_scheduler.find(TimerIndex(
         project=project_config.name,
         status=ColScheduleStatus.NotProcessed,
-    ))
+    ), alter_cursor=lambda x: x.sort("_id", DESCENDING))
 
     scheduler_items = list(cursor)
     total = len(scheduler_items)
