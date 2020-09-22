@@ -67,21 +67,19 @@ class RepoUtil:
         if init_job.db_broken_count() >= init_job.retries:
             logger.warning(f"Skipping job '{init_job}' since it already has {init_job.db_broken_count()} broken builds")
             yield 0
-            raise StopIteration()
-
-        test_job = self.project_config.get(job_name)
-
-        for schedule_document, schedule_index in self._process_job(test_job, context):
-            scheduled_already = DBStats.get_schedule_repetitions(schedule_index)
-            schedule_document.details.repetitions -= scheduled_already
-            if schedule_document.details.repetitions > 0:
-                Mongo().col_scheduler.insert(schedule_document)
-                logger.debug(
-                    f"Inserted {schedule_document.details.repetitions} requests for the job:\n{test_job.pretty_index}")
-                yield schedule_document.details.repetitions
-            else:
-                logger.debug(
-                    f"Already scheduled {scheduled_already} runs, which is more than enough:\n{test_job.pretty_index}")
+        else:
+            test_job = self.project_config.get(job_name)
+            for schedule_document, schedule_index in self._process_job(test_job, context):
+                scheduled_already = DBStats.get_schedule_repetitions(schedule_index)
+                schedule_document.details.repetitions -= scheduled_already
+                if schedule_document.details.repetitions > 0:
+                    Mongo().col_scheduler.insert(schedule_document)
+                    logger.debug(
+                        f"Inserted {schedule_document.details.repetitions} requests for the job:\n{test_job.pretty_index}")
+                    yield schedule_document.details.repetitions
+                else:
+                    logger.debug(
+                        f"Already scheduled {scheduled_already} runs, which is more than enough:\n{test_job.pretty_index}")
 
     def schedule_runs(self, branches=None, job_name: str = "test", max_per_branch=10):
         for branch_commit in self.get_commits(branches, max_per_branch=max_per_branch):
