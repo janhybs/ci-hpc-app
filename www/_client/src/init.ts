@@ -1,4 +1,5 @@
-import { IIndexInfo, ICommitBaseline } from "./models/DataModel";
+import { IIndexInfo, ICommitBaseline, IConfigurationDto } from "./models/DataModel";
+import { Dispatcher } from "flux";
 
 interface HttpClientConfig {
     baseUrl: string;
@@ -85,3 +86,34 @@ export const baselines: ICommitBaseline[] = [
     { value: "b04af7fb08d423036b30ea00c3b8941b0c91e3c0", name: "v2.2.1" },
     { value: "6b54fcf046d36cb37bfcc53bd6e613eca1459bda", name: "v3.0.0" },
 ];
+
+
+export type DispatcherActionType = 'configurationLoaded' | "serverStateChanged";
+export interface IDispatcher {
+    actionType: DispatcherActionType;
+    data?: any;
+}
+
+export const appDispatcher = new Dispatcher<IDispatcher>();
+
+let _configuration: IConfigurationDto = null as any;
+httpClient.fetch<IConfigurationDto>("configuration/full")
+    .then(i => {
+        _configuration = i;
+        appDispatcher.dispatch({
+            actionType: "configurationLoaded",
+            data: _configuration,
+        });
+    });
+
+export const getConfiguration = () => {
+    return _configuration;
+}
+
+export function handleDispatch<T>(type: DispatcherActionType, callback: (data: T) => void) {
+    appDispatcher.register((payload) => {
+        if (payload.actionType == type) {
+            callback(payload.data as T);
+        }
+    })
+}

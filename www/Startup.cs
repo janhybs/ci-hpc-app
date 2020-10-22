@@ -36,7 +36,7 @@ namespace CC.Net
             services.AddOptions();
             services.AddSingleton(MongoDBConfig);
             services.AddSingleton(AppOptions);
-            services.AddSingleton(new GitInfoService(AppOptions));
+            services.AddSingleton<GitInfoService>();
             services.AddSingleton<DbService>();
             services.AddSingleton<RepoInfoCache>();
             services.AddControllersWithViews();

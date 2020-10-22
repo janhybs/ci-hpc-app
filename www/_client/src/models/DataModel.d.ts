@@ -161,6 +161,11 @@
 		frame: string;
 		info: IIndexInfo;
 	}
+	export interface IConfigurationDto {
+		branches: IColRepoInfo[];
+		branchNames: string[];
+		frontendConfig: IFrontendConfig;
+	}
 	export interface ISchedulerFilter {
 		limit: number;
 		status: ColSchedulerStatus;
@@ -169,4 +174,11 @@
 		days: number;
 		info: IIndexInfo;
 		limit: number;
+	}
+	export interface IBaseline {
+		commit: string;
+		title: string;
+	}
+	export interface IFrontendConfig {
+		baselines: IBaseline[];
 	}

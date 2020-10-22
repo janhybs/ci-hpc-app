@@ -53,7 +53,7 @@ namespace CC.Net.Controllers
                 filter.info.Mesh,
                 filter.info.Benchmark,
                 "whole-program",
-                filter.info.Branch
+                filter.info.Branch ?? "master"
             );
 
             stopWatch.Start("MongoDB Aggregate");

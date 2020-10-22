@@ -27,9 +27,7 @@ namespace CC.Net
             if (args.Length > 0 && args[0] == "--generate")
             {
                 Directory.CreateDirectory("_client/src/models/");
-                File.WriteAllText(
-                    "_client/src/models/DataModel.d.ts",
-                    TypeScript.Definitions()
+                var model = TypeScript.Definitions()
                         .For<ColScheduler>()
                         .For<ColTimers>()
                         .For<SimpleTimer>()
@@ -43,15 +41,19 @@ namespace CC.Net
                         .For<CompareCommitDto>()
                         .For<DurInfoWrapper>()
                         .For<CommitBaseline>()
+                        .For<ConfigurationDto>()
 
                         .WithVisibility((a, b) => true)
                         .WithMemberTypeFormatter(MemberTypeFormatter)
                         .WithModuleNameFormatter((moduleName) => "")
-                        .WithMemberFormatter((identifier) => 
-                            Char.ToLower(identifier.Name[0]) + identifier.Name.Substring(1)
+                        .WithMemberFormatter((identifier) =>
+                            char.ToLower(identifier.Name[0]) + identifier.Name.Substring(1)
                         )
                         .WithTypeFormatter((type, f) => "I" + ((TsClass)type).Name)
-                        .Generate());
+                        .Generate();
+
+                var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "_client", "src", "models", "DataModel.d.ts");
+                File.WriteAllText(fullPath, model);
                 Environment.Exit(0);
             }
 

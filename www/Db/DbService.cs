@@ -1,6 +1,7 @@
 using CC.Net.Collections;
 using CC.Net.Config;
 using CC.Net.Services;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 
@@ -39,6 +40,11 @@ namespace CC.Net.Db
             ColIndexInfo = _dB.GetCollection<ColIndexInfo>(_dBConfig.CollectionIndexInfo);
 
             CachedColIndexInfo = new CachedCollection<ColIndexInfo>(ColIndexInfo);
+        }
+
+        public IMongoCollection<BsonDocument> GetGenericCollection(string name)
+        {
+            return _dB.GetCollection<BsonDocument>(name);
         }
     }
 }

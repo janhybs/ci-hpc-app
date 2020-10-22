@@ -1,6 +1,6 @@
 import React from "react";
 
-import { ISimpleTimers } from "../models/DataModel";
+import { ISimpleTimers, ISimpleTimersEx } from "../models/DataModel";
 import { getOptions, registerOptions } from "./BenchmarkView.Options";
 import { BenchmarkViewModel, getConfigurationName, getColor } from "./BenchmarkView.Model";
 import Highcharts from 'highcharts/highstock';
@@ -9,7 +9,7 @@ import Color from "color"
 import { Row } from "react-bootstrap";
 
 interface BenchmarkViewChartProps {
-    model: BenchmarkViewModel;
+    // model?: BenchmarkViewModel;
     showBroken: boolean;
     commitFilter: string[];
     isSmall: boolean;
@@ -17,36 +17,26 @@ interface BenchmarkViewChartProps {
     detailCommit?: string;
     selectedBranch: string;
 
+    data: ISimpleTimersEx[];
+    editOptions: (options: Required<Highcharts.Options>) => Required<Highcharts.Options>;
+
     onHover: (timer: ISimpleTimers) => void,
     onClick: (timer: ISimpleTimers) => void
 }
 
 export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
-    console.log("!!! render chart");
-    
-    const { model, showBroken, commitFilter, hideTitle, isSmall, detailCommit, onHover, onClick } = props;
-    const configurationName = getConfigurationName(model.configuration);
+    const { showBroken, commitFilter, hideTitle, isSmall, detailCommit, data: items, onHover, onClick, editOptions } = props;
 
-    const title = hideTitle ? ""
-        : `${configurationName}<br /><small>(${(model.ratio * 100).toFixed(2)} % working)</small>`;
-
-    const data = model.items
+    const data = items
         .filter(i => !i.isBroken || showBroken)
         .filter(i => commitFilter.length == 0 ? true : commitFilter.indexOf(i.commit) >= 0)
 
     const commitInfo = new Map(data.map(c => [c.commit, c.info]));
     let options = getOptions(commitInfo);
-    options.title.text = title;
     options.plotOptions.series!.animation = isSmall ? false : { duration: 200 };
     options.legend.enabled = !isSmall;
     options.chart.height = isSmall ? "256" : "700";
-    /*options.tooltip.formatter = function(a) {
-        try {
-            onHover(this.point as unknown as ISimpleTimers);
-        }catch(e) {
-        }
-        return "";
-    }*/
+    
     if (isSmall) {
         options.series = [
             {
@@ -74,7 +64,7 @@ export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
                 allowPointSelect: true,
                 type: "boxplot",
                 name: "Boxplot",
-                stickyTracking: false,
+                stickyTracking: true,
                 color: (Highcharts as any).getOptions().colors[0],
                 data: data.map(i => {
                     return {
@@ -88,6 +78,7 @@ export const BenchmarkViewChart = (props: BenchmarkViewChartProps) => {
 
 
     options = registerOptions(options, (t) => onHover(t), (t) => onClick(t));
+    editOptions(options);
 
     return <HighchartsReact highcharts={Highcharts} options={options} />
 }
