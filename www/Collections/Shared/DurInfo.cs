@@ -17,6 +17,18 @@ namespace CC.Net.Collections.Shared
                 Max = durations.Max();
             }
         }
+        
+        public DurInfo(IEnumerable<double> timers)
+        {
+            var durations = timers.ToArray();
+            if(durations.Any())
+            {
+                N = durations.Length;
+                Avg = durations.Average();
+                Min = durations.Min();
+                Max = durations.Max();
+            }
+        }
 
         public double Avg { get; set; } = 0.0;
         public double Min { get; set; } = 0.0;

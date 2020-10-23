@@ -42,6 +42,7 @@ namespace CC.Net
                         .For<DurInfoWrapper>()
                         .For<CommitBaseline>()
                         .For<ConfigurationDto>()
+                        .For<CompareCommitFlatDto>()
 
                         .WithVisibility((a, b) => true)
                         .WithMemberTypeFormatter(MemberTypeFormatter)

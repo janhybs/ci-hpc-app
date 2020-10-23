@@ -12,10 +12,6 @@ namespace CC.Net.Db
             Path.Join(Environment.CurrentDirectory, "mongo.group-timers.json")
         );
         
-        private static string _allbranches = File.ReadAllText(
-            Path.Join(Environment.CurrentDirectory, "mongo.all-branches.json")
-        );
-
         public static string GroupTimers(string test, string mesh, string benchmark, string frame="whole-program", string branch="master")
             => _groupTimers
                 .Replace("$$TEST$$", test)
@@ -23,8 +19,6 @@ namespace CC.Net.Db
                 .Replace("$$BENCHMARK$$", benchmark)
                 .Replace("$$FRAME$$", frame)
                 .Replace("$$BRANCH$$", branch);
-        public static string AllBranches()
-            => _allbranches;
     }
 
     public static class StringExtensions 

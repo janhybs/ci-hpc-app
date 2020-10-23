@@ -1,4 +1,4 @@
-import { Box, FormControl, InputLabel, MenuItem, Select, TextField, Tooltip, Button, Paper, Card, CardContent, CardHeader } from '@material-ui/core';
+import { Box, FormControl, InputLabel, MenuItem, Select, TextField, Tooltip, Button, Paper, Card, CardContent, CardHeader, ButtonGroup, Dialog, DialogTitle, DialogContent } from '@material-ui/core';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import { PlotData, PlotMouseEvent } from "plotly.js";
 import React, { useEffect, useState } from "react";
@@ -7,9 +7,10 @@ import Plot from "react-plotly.js";
 import { useParams } from 'react-router-dom';
 import { SimpleLoader } from "../components/SimpleLoader";
 import { configurations, getConfiguration, handleDispatch, httpClient } from "../init";
-import { IBaseline, IColRepoInfo, IConfigurationDto, IIndexInfo, ISimpleTimers, ISimpleTimersEx } from "../models/DataModel";
+import { IBaseline, IColRepoInfo, IConfigurationDto, IIndexInfo, ISimpleTimers, ISimpleTimersEx, ICompareCommitDto, ICompareCommitFilter, ICompareCommitFlatDto, IDurInfo, IDurInfoWrapper } from "../models/DataModel";
 import "../styles/chart.css";
 import { trimSha } from './BenchmarkView.Model';
+import { useBool as useStateBoolean } from '../utils/hookUtils';
 
 
 
@@ -99,6 +100,43 @@ const getConfigLabel = (config: IIndexInfo) => {
     return `${config.test} ${config.benchmark} ${config.mesh}`;
 }
 
+const transformPlotData = (data: ISimpleTimersEx[], selectedCommits: string[]) => {
+    const getColor = (timer: ISimpleTimersEx) => {
+        const isSelected = selectedCommits.indexOf(timer.commit) != -1;
+
+        if (isSelected) {
+            return "rgba(214, 164, 93, 0.5)"
+        }
+
+        if (timer.welch?.significant) {
+            return timer.welch.estimatedValue1 > timer.welch.estimatedValue2
+                ? "rgba(255, 130, 90, 0.5)"
+                : "rgba(130, 255, 90, 0.5)";
+        }
+
+        if (timer.welch == null) {
+            return "#ccc";
+        }
+
+        return "rgba(93, 164, 214, 0.5)";
+    }
+
+    const plotData = data.map(i => {
+        return {
+            type: "box",
+            customdata: i as any,
+            x: i.durations.map(j => i.commit.substr(0, 8)),
+            y: i.durations,
+            name: i.commit.substr(0, 8),
+            marker: {
+                color: getColor(i),
+            },
+        } as PlotData;
+    });
+
+    return plotData;
+}
+
 let renderStatsSetTimer: any = (timer: ISimpleTimersEx) => null;
 
 export const BenchmarkView = (props: BenchmarkViewProps) => {
@@ -128,23 +166,10 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     const [selectedCommits, setSelectedCommits] = useState<string[]>([]);
     const [data, setData] = useState<ISimpleTimersEx[]>([]);
     const [plotData, setPlotData] = useState<PlotData[]>([]);
-    // const [renderStatsSetTimer, setRenderStatsSetTimer] = useState<any>();
 
-    const getColor = (timer: ISimpleTimersEx) => {
-        const isSelected = selectedCommits.indexOf(timer.commit) != -1;
-
-        if (isSelected) {
-            return "rgba(214, 164, 93, 0.5)"
-        }
-
-        if (timer.welch?.significant) {
-            return timer.welch.estimatedValue1 > timer.welch.estimatedValue2
-                ? "rgba(255, 130, 90, 0.5)"
-                : "rgba(130, 255, 90, 0.5)";
-        }
-
-        return "rgba(93, 164, 214, 0.5)";
-    }
+    // compare commits
+    const [isOpen, openDialog, closeDialog] = useStateBoolean();
+    const [compareCommits, setCompareCommits] = useState<string[]>([]);
 
     // listen for load
     handleDispatch<IConfigurationDto>("configurationLoaded", (data) => {
@@ -152,22 +177,12 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     });
 
     useEffect(() => {
+        setSelectedCommits([]);
         setData(transformData(info));
     }, [info]);
 
     useEffect(() => {
-        setPlotData(data.map(i => {
-            return {
-                type: "box",
-                customdata: i as any,
-                y: i.durations,
-                name: i.commit.substr(0, 8),
-                marker: {
-                    color: getColor(i),
-                },
-
-            } as PlotData;
-        }));
+        setPlotData(transformPlotData(data, selectedCommits));
     }, [data, selectedCommits]);
 
     // wait until everything loaded
@@ -192,6 +207,18 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
         setSelectedConfiguration(configurations[Number(event.target.value)]);
     }
 
+    const handleCompareBaseline = () => {
+        if (selectedBaseline) {
+            setCompareCommits([selectedBaseline.commit, ...selectedCommits]);
+        }
+        openDialog();
+    }
+
+    const handleCompareSelected = () => {
+        setCompareCommits([...selectedCommits]);
+        openDialog();
+    }
+
 
     const handleClick = (event: Readonly<PlotMouseEvent>) => {
         const info = (event.points[0].data.customdata as unknown as ISimpleTimersEx);
@@ -208,6 +235,9 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
 
     const handleHover = (event: Readonly<PlotMouseEvent>) => {
         const info = (event.points[0].data.customdata as unknown as ISimpleTimersEx);
+        if (!selectedCommits.length) {
+            renderStatsSetTimer(info);
+        }
     }
 
     const renderBranches = (branches: string[]) => {
@@ -267,35 +297,115 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
                     />
                 )}
             />
+            <Box display="flex" flexGrow="1" />
+            <ButtonGroup size="small" variant="contained">
+                <Button color="primary" disabled={selectedCommits.length < 1 || !selectedBaseline} onClick={handleCompareBaseline}>
+                    Compare Baseline
+                </Button>
+                <Button color="secondary" disabled={selectedCommits.length < 2} onClick={handleCompareSelected}>
+                    Compare selected
+                </Button>
+            </ButtonGroup>
         </Box>
         <Box display="flex">
             <div style={{ width: "calc(100% - 450px)" }}>
                 <Plot style={{ width: "100%", minHeight: 600 }}
-                    layout={{ autosize: true, showlegend: false }}
+                    layout={{ autosize: true, showlegend: false, hovermode: "x unified" }}
                     config={{ responsive: true }}
                     data={plotData}
                     onClick={handleClick}
                     onHover={handleHover}
                 />
-
-                {/* <BenchmarkViewChart
-                    data={data}
-                    editOptions={editOptions}
-                    commitFilter={[]}
-                    hideTitle={true}
-                    isSmall={false}
-                    showBroken={true}
-                    detailCommit={undefined}
-                    selectedBranch={"master"}
-                    onClick={selectTimer}
-                    onHover={timer => setTimer(timer as any)}
-                /> */}
             </div>
             <div style={{ width: 450 }}>
                 <RenderStats timers={data} onInit={(i) => renderStatsSetTimer = i} />
             </div>
         </Box>
+        <Dialog open={isOpen} onClose={closeDialog} fullWidth maxWidth="xl">
+            <DialogContent>
+                <CompareView compareCommits={compareCommits} selectedConfiguration={selectedConfiguration} />
+            </DialogContent>
+        </Dialog>
     </>
+}
+
+interface CompareViewProps {
+    compareCommits: string[];
+    selectedConfiguration: IIndexInfo;
+}
+
+export const CompareView = (props: CompareViewProps) => {
+    const { compareCommits, selectedConfiguration } = props;
+    const [frame, setFrame] = useState("/whole-program/application-run");
+    const [serverConfig, setServerConfig] = useState(getConfiguration());
+    const filter: Partial<ICompareCommitFilter> = {
+        info: selectedConfiguration,
+        commits: compareCommits,
+        frame: frame,
+    };
+
+    // listen for load
+    handleDispatch<IConfigurationDto>("configurationLoaded", (data) => {
+        setServerConfig(data);
+    });
+
+    const data = usePostResource<ICompareCommitFlatDto>("compare-commit/compare-flat-ab", filter);
+
+    if (!data || !serverConfig) {
+        return <SimpleLoader />
+    }
+
+    const { items } = data;
+    const allPaths = [...new Set(items.map(i => i.path))];
+    // const allFrames = [...new Set(items.map(i => i.frame))];
+    const allCommits = [...new Set(items.map(i => i.commit))];
+
+    const prettyNames = allCommits.map(i => {
+        const prettyName = serverConfig.frontendConfig.baselines.find(j => j.commit == i);
+        return prettyName
+            ? `${prettyName.title} (${i.substr(0, 8)})`
+            : i.substr(0, 8);
+    });
+
+    const plotData = [
+        ...allPaths.map(path => {
+            const relevant = allCommits.map(commit => items.find(i => i.path == path && i.commit == commit));
+            const valid = relevant.filter(i => i != null)[0] as unknown as IDurInfoWrapper;
+            return {
+                type: "bar",
+                x: prettyNames,
+                y: relevant.map(i => i?.duration.avg ?? 0),
+                name: valid.frame,
+                customdata: valid as any,
+                marker: {
+                    color: valid.frame == "NOT-COVERED" ? "#ccc" : undefined
+                },
+                hovertemplate: "<b>%{x}</b>: %{y:.3f}"
+            } as PlotData
+        })
+    ] as PlotData[];
+
+    const handleClick = (event: Readonly<PlotMouseEvent>) => {
+        var customdata = (event.points[0].data.customdata as unknown as IDurInfoWrapper);
+        if (customdata.frame != "NOT-COVERED") {
+            setFrame(customdata.path);
+        }
+    }
+
+    const frames = frame.split("/");
+    return <Box display="flex" flexDirection="column">
+        <div>
+            {frames.slice(1).map((i, j) => (
+                <Button key={j} disabled={j == frames.length-2} onClick={() => setFrame(frames.slice(0, j +2).join("/"))}>/{i}</Button>
+            ))}
+        </div>
+        <Plot
+            config={{ responsive: true, }}
+            layout={{ barmode: "stack", showlegend: true, width: 400 + compareCommits.length * 200, height: 640, hovermode: "closest", yaxis: { fixedrange: true }, xaxis: { fixedrange: true } }}
+            data={plotData}
+            onClick={handleClick}
+        />
+    </Box>
 }
 
 interface RenderStatsProps {
@@ -347,7 +457,7 @@ const RenderStats = (props: RenderStatsProps) => {
             <CardContent>
                 <CardHeader title="Data" />
 
-                <Plot style={{ width: "100%", height: 280 }} layout={{ margin: {l: 40, r: 20, t: 0},  showlegend: false, autosize: true }} data={[
+                <Plot style={{ width: "100%", height: 280 }} layout={{ margin: { l: 40, r: 20, t: 0 }, showlegend: false, autosize: true }} data={[
                     {
                         type: "box" as any,
                         mode: 'markers',

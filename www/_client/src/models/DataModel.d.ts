@@ -78,6 +78,7 @@
 		n: number;
 	}
 	export interface IDurInfoWrapper {
+		commit: string;
 		duration: IDurInfo;
 		frame: string;
 		path: string;
@@ -158,8 +159,12 @@
 	export interface ICompareCommitFilter {
 		commitA: string;
 		commitB: string;
+		commits: string[];
 		frame: string;
 		info: IIndexInfo;
+	}
+	export interface ICompareCommitFlatDto {
+		items: IDurInfoWrapper[];
 	}
 	export interface IConfigurationDto {
 		branches: IColRepoInfo[];

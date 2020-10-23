@@ -11,4 +11,9 @@ namespace CC.Net.Dto
         public List<DurInfoWrapper> CommitA { get; set; }
         public List<DurInfoWrapper> CommitB { get; set; }
     }
+
+    public class CompareCommitFlatDto
+    {
+        public List<DurInfoWrapper> Items { get; set; }
+    }
 }
