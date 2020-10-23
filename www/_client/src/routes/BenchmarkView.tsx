@@ -11,6 +11,7 @@ import { IBaseline, IColRepoInfo, IConfigurationDto, IIndexInfo, ISimpleTimers, 
 import "../styles/chart.css";
 import { trimSha } from './BenchmarkView.Model';
 import { useBool as useStateBoolean } from '../utils/hookUtils';
+import moment from 'moment';
 
 
 
@@ -125,7 +126,7 @@ const transformPlotData = (data: ISimpleTimersEx[], selectedCommits: string[]) =
         return {
             type: "box",
             customdata: i as any,
-            x: i.durations.map(j => i.commit.substr(0, 8)),
+            x: i.durations.map(j => `${moment(i.info?.date).fromNow()} ${i.commit.substr(0, 8)}`),
             y: i.durations,
             name: i.commit.substr(0, 8),
             marker: {
@@ -140,7 +141,10 @@ const transformPlotData = (data: ISimpleTimersEx[], selectedCommits: string[]) =
 let renderStatsSetTimer: any = (timer: ISimpleTimersEx) => null;
 
 export const BenchmarkView = (props: BenchmarkViewProps) => {
-    const { configuration } = props;
+    const { configuration, simple } = props;
+    const [isSimple, isComplex] = [simple === true, !simple];
+    const sideBarWidth = isComplex ? 450 : 0;
+    const chartHeight = isComplex ? 800 : 450;
 
     // server config
     const [serverConfig, setServerConfig] = useState(getConfiguration());
@@ -148,7 +152,7 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     // toolbar options
     const [selectedCommit, setSelectedCommit] = useState<ISimpleTimers>();
     const [selectedBaseline, setSelectedBaseline] = useState<IBaseline>();
-    const [selectedBranch, setSelectedBranch] = useState("JHy_runtest");
+    const [selectedBranch, setSelectedBranch] = useState("master");
 
     const selectedBaselineIndex = selectedBaseline?.commit ?? "";
     const selectedInfo = serverConfig?.branches.find(i => i.commit == selectedCommit?.commit);
@@ -251,7 +255,7 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     }
 
     return <>
-        <Box display="flex">
+        {isComplex && <Box display="flex">
             <FormControl>
                 <InputLabel id="config-label">Configuration</InputLabel>
                 <Select labelId="config-label" value={selectedConfigurationIndex} onChange={handleConfigurationChange} style={{ minWidth: 400 }}>
@@ -306,20 +310,23 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
                     Compare selected
                 </Button>
             </ButtonGroup>
-        </Box>
+        </Box>}
+        {isSimple && <h4 className="px-3">
+            {getConfigLabel(selectedConfiguration)}
+        </h4>}
         <Box display="flex">
-            <div style={{ width: "calc(100% - 450px)" }}>
-                <Plot style={{ width: "100%", minHeight: 600 }}
-                    layout={{ autosize: true, showlegend: false, hovermode: "x unified" }}
+            <div style={{ width: `calc(100% - ${sideBarWidth}px)` }}>
+                <Plot style={{ width: "100%", minHeight: chartHeight }}
+                    layout={{ autosize: true, showlegend: false, hovermode: "x unified", margin: {b: 150} }}
                     config={{ responsive: true }}
                     data={plotData}
                     onClick={handleClick}
                     onHover={handleHover}
                 />
             </div>
-            <div style={{ width: 450 }}>
+            {isComplex && <div style={{ width: sideBarWidth }}>
                 <RenderStats timers={data} onInit={(i) => renderStatsSetTimer = i} />
-            </div>
+            </div>}
         </Box>
         <Dialog open={isOpen} onClose={closeDialog} fullWidth maxWidth="xl">
             <DialogContent>
@@ -396,7 +403,7 @@ export const CompareView = (props: CompareViewProps) => {
     return <Box display="flex" flexDirection="column">
         <div>
             {frames.slice(1).map((i, j) => (
-                <Button key={j} disabled={j == frames.length-2} onClick={() => setFrame(frames.slice(0, j +2).join("/"))}>/{i}</Button>
+                <Button key={j} disabled={j == frames.length - 2} onClick={() => setFrame(frames.slice(0, j + 2).join("/"))}>/&nbsp;{i}</Button>
             ))}
         </div>
         <Plot
