@@ -111,8 +111,8 @@ const transformPlotData = (data: ISimpleTimersEx[], selectedCommits: string[]) =
 
         if (timer.welch?.significant) {
             return timer.welch.estimatedValue1 > timer.welch.estimatedValue2
-                ? "rgba(255, 130, 90, 0.5)"
-                : "rgba(130, 255, 90, 0.5)";
+                ? "rgba(255, 90, 90, 0.5)"
+                : "rgba(90, 255, 90, 0.5)";
         }
 
         if (timer.welch == null) {
@@ -123,12 +123,14 @@ const transformPlotData = (data: ISimpleTimersEx[], selectedCommits: string[]) =
     }
 
     const plotData = data.map(i => {
+        const x = `${moment(i.info?.date).fromNow()} ${i.commit.substr(0, 8)}`;
         return {
             type: "box",
             customdata: i as any,
-            x: i.durations.map(j => `${moment(i.info?.date).fromNow()} ${i.commit.substr(0, 8)}`),
+            x: i.durations.map(j => x),
             y: i.durations,
-            name: i.commit.substr(0, 8),
+            name: x,
+            hoverlabel: {namelength: 60},
             marker: {
                 color: getColor(i),
             },
@@ -318,7 +320,7 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
             <div style={{ width: `calc(100% - ${sideBarWidth}px)` }}>
                 <Plot style={{ width: "100%", minHeight: chartHeight }}
                     layout={{ autosize: true, showlegend: false, hovermode: "x unified", margin: {b: 150} }}
-                    config={{ responsive: true }}
+                    config={{ responsive: true, scrollZoom: true }}
                     data={plotData}
                     onClick={handleClick}
                     onHover={handleHover}
