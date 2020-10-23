@@ -144,7 +144,8 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     const { configuration, simple } = props;
     const [isSimple, isComplex] = [simple === true, !simple];
     const sideBarWidth = isComplex ? 450 : 0;
-    const chartHeight = isComplex ? 800 : 450;
+    const chartHeight = isComplex ? 800 : 350;
+    const chartMargin = isSimple ? {l: 0, r: 0, t: 0} : undefined;
 
     // server config
     const [serverConfig, setServerConfig] = useState(getConfiguration());
@@ -342,8 +343,8 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
         <Box display="flex">
             <div style={{ width: `calc(100% - ${sideBarWidth}px)` }}>
                 <Plot style={{ width: "100%", minHeight: chartHeight }}
-                    layout={{ autosize: true, showlegend: false, hovermode: "x unified", margin: {b: 150} }}
-                    config={{ responsive: true, scrollZoom: true }}
+                    layout={{ autosize: true, showlegend: false, hovermode: "x unified", margin: chartMargin }}
+                    config={{ responsive: true, scrollZoom: isComplex }}
                     data={plotData}
                     onClick={handleClick}
                     onHover={handleHover}
