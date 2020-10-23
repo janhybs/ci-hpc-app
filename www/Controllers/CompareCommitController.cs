@@ -45,7 +45,6 @@ namespace CC.Net.Controllers
             // var regex2 = new Regex($"^{filter.Frame}/[a-zA-Z0-9-]+/[a-zA-Z0-9-]+$", ro);
             var allResults = await _dbService.ColTimers.Find(
                     i => filter.Commits.Contains(i.Index.Commit)
-                    && i.Index.Project == filter.Info.Project
                     && i.Index.Mesh == filter.Info.Mesh
                     && i.Index.Test == filter.Info.Test
                     && (i.Result.Path == filter.Frame || regex.IsMatch(i.Result.Path))

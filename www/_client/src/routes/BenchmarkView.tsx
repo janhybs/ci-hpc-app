@@ -259,8 +259,8 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
 
     const renderToolbar = () => {
         return <Box display="flex">
-            <Autocomplete options={configurations}
-                value={selectedConfiguration}
+            <Autocomplete disableClearable options={configurations}
+                value={selectedConfiguration as any}
                 style={{ minWidth: 400 }}
                 autoComplete={false}
                 groupBy={(option: IIndexInfo) => `${option.test} - ${option.benchmark}`}
