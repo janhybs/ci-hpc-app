@@ -1,9 +1,10 @@
-﻿using Cc.Net.Dto;
+﻿using CC.Net.Dto;
 using CC.Net.Collections;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CC.Net.Collections.Shared;
 
 namespace CC.Net.Dto
 {
@@ -17,5 +18,6 @@ namespace CC.Net.Dto
             .Distinct();
 
         public FrontendConfig FrontendConfig { get; set; }
+        public List<IndexInfo> BenchmarkList { get; set; }
     }
 }

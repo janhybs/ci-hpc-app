@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
-namespace Cc.Net.Dto
+namespace CC.Net.Dto
 {
     public class FrontendConfig
     {

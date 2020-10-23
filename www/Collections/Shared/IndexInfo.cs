@@ -29,8 +29,8 @@ namespace CC.Net.Collections.Shared
         [BsonElement("mesh")]
         public string Mesh { get; set; }
 
-        // [BsonElement("cpus")]
-        // public object Cpus { get; set; }
+        [BsonElement("cpus")]
+        public object Cpus { get; set; }
 
         [BsonElement("frame")]
         public string Frame { get; set; }

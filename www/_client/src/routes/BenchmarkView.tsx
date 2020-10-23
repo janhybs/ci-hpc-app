@@ -6,7 +6,7 @@ import Moment from "react-moment";
 import Plot from "react-plotly.js";
 import { useParams } from 'react-router-dom';
 import { SimpleLoader } from "../components/SimpleLoader";
-import { configurations, getConfiguration, handleDispatch, httpClient } from "../init";
+import { getConfiguration, handleDispatch, httpClient } from "../init";
 import { IBaseline, IColRepoInfo, IConfigurationDto, IIndexInfo, ISimpleTimers, ISimpleTimersEx, ICompareCommitDto, ICompareCommitFilter, ICompareCommitFlatDto, IDurInfo, IDurInfoWrapper } from "../models/DataModel";
 import "../styles/chart.css";
 import { trimSha } from './BenchmarkView.Model';
@@ -72,9 +72,6 @@ const transformData = (info?: TimerWrapper) => {
     ) as ISimpleTimersEx[];
 }
 
-const getCommitMap = (timers: ISimpleTimersEx[]) => {
-    return new Map(timers.map(c => [c.commit, c.info]));
-}
 
 interface TimerWrapper {
     data: ISimpleTimers[];
@@ -82,19 +79,20 @@ interface TimerWrapper {
 }
 
 
-const useFilter = (info: IIndexInfo, branch: string) => {
+const useFilter = (info: IIndexInfo | null, branch: string) => {
     let filterValue = { info: info, limit: 5000 };
-    filterValue.info.branch = branch;
+    if (filterValue.info) {
+        filterValue.info.branch = branch;
+    }
 
     const [filter, setFilter] = useState(filterValue);
     const json = JSON.stringify(filterValue);
 
     useEffect(() => {
         setFilter(filterValue);
-        console.log("new filter");
     }, [json]);
 
-    return filter;
+    return info == null ? undefined : filter;
 }
 
 const getConfigLabel = (config: IIndexInfo) => {
@@ -150,6 +148,7 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
 
     // server config
     const [serverConfig, setServerConfig] = useState(getConfiguration());
+    const configurations = serverConfig?.benchmarkList;
 
     // toolbar options
     const [selectedCommit, setSelectedCommit] = useState<ISimpleTimers>();
@@ -161,8 +160,8 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
 
     // configuration filter
     const configIndex = Number((useParams() as any).index);
-    const [selectedConfiguration, setSelectedConfiguration] = useState(configuration ?? configurations[configIndex]);
-    const selectedConfigurationIndex = configurations.indexOf(selectedConfiguration);
+    const [selectedConfiguration, setSelectedConfiguration] = useState(configuration ?? (configurations ? configurations[configIndex] : null));
+    const selectedConfigurationIndex = selectedConfiguration == undefined ? -1 : serverConfig?.benchmarkList.indexOf(selectedConfiguration);
     const filter = useFilter(selectedConfiguration, selectedBranch);
 
     // load data
@@ -180,6 +179,9 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
     // listen for load
     handleDispatch<IConfigurationDto>("configurationLoaded", (data) => {
         setServerConfig(data);
+        if(selectedConfiguration == undefined) {
+            setSelectedConfiguration(data.benchmarkList[configIndex]);
+        }
     });
 
     useEffect(() => {
@@ -191,10 +193,18 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
         setPlotData(transformPlotData(data, selectedCommits));
     }, [data, selectedCommits]);
 
-    // wait until everything loaded
-    if (!serverConfig || !info || !info.data.length || !data || !plotData) {
-        return <SimpleLoader />
+
+    const renderBranches = (branches: string[]) => {
+        if (branches.length <= 3) {
+            return <>{branches.join(", ")}</>
+        }
+        const sub = [...branches.slice(0, 3), "..."];
+        return <Tooltip title={branches.join(", ")}>
+            <>{sub.join(", ")}</>
+        </Tooltip>
     }
+
+
 
     const handleBaselineChange = (event: React.ChangeEvent<{ value: unknown }>) => {
         const commit = event.target.value as string;
@@ -209,8 +219,8 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
         setSelectedCommit(data.find(i => i.commit == newVal?.commit));
     }
 
-    const handleConfigurationChange = (event: React.ChangeEvent<{ value: unknown }>) => {
-        setSelectedConfiguration(configurations[Number(event.target.value)]);
+    const handleConfigurationChange = (event: React.ChangeEvent<{}>, value: IIndexInfo | null) => {
+        setSelectedConfiguration(value);
     }
 
     const handleCompareBaseline = () => {
@@ -246,26 +256,30 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
         }
     }
 
-    const renderBranches = (branches: string[]) => {
-        if (branches.length <= 3) {
-            return <>{branches.join(", ")}</>
-        }
-        const sub = [...branches.slice(0, 3), "..."];
-        return <Tooltip title={branches.join(", ")}>
-            <>{sub.join(", ")}</>
-        </Tooltip>
-    }
-
-    return <>
-        {isComplex && <Box display="flex">
-            <FormControl>
-                <InputLabel id="config-label">Configuration</InputLabel>
-                <Select labelId="config-label" value={selectedConfigurationIndex} onChange={handleConfigurationChange} style={{ minWidth: 400 }}>
-                    {configurations.map((i, j) =>
-                        <MenuItem key={j} value={j}>{getConfigLabel(i)}</MenuItem>
-                    )}
-                </Select>
-            </FormControl>
+    const renderToolbar = () => {
+        return <Box display="flex">
+            <Autocomplete options={configurations}
+                value={selectedConfiguration}
+                style={{ minWidth: 400 }}
+                autoComplete={false}
+                groupBy={(option: IIndexInfo) => `${option.test} - ${option.benchmark}`}
+                onChange={handleConfigurationChange}
+                getOptionLabel={(option: IIndexInfo) => `${getConfigLabel(option)}`}
+                renderOption={(option: IIndexInfo) => (
+                    <Box key={option.commit} display="flex" flexDirection="column">
+                        <small>{option.mesh}</small>
+                    </Box>
+                )}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        label="Choose a configuration"
+                        inputProps={{
+                            ...params.inputProps,
+                        }}
+                    />
+                )}
+            />
             <FormControl>
                 <InputLabel id="branch-label">Branch</InputLabel>
                 <Select labelId="branch-label" value={selectedBranch} onChange={handleBranchChange} style={{ minWidth: 200 }}>
@@ -296,7 +310,7 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
                 renderInput={(params) => (
                     <TextField
                         {...params}
-                        label="Choose a coommit"
+                        label="Choose a commit"
                         inputProps={{
                             ...params.inputProps,
                         }}
@@ -312,7 +326,16 @@ export const BenchmarkView = (props: BenchmarkViewProps) => {
                     Compare selected
                 </Button>
             </ButtonGroup>
-        </Box>}
+        </Box>
+    }
+
+    // wait until everything loaded
+    if (!serverConfig || !info || !selectedConfiguration) {
+        return <SimpleLoader />
+    }
+
+    return <>
+        {isComplex && <>{renderToolbar()}</>}
         {isSimple && <h4 className="px-3">
             {getConfigLabel(selectedConfiguration)}
         </h4>}

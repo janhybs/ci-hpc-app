@@ -88,6 +88,7 @@
 		branch: string;
 		commit: string;
 		commitShort: string;
+		cpus: any;
 		frame: string;
 		host: any;
 		job: string;
@@ -146,6 +147,10 @@
 		size: number;
 		statistic: number;
 	}
+	export interface IBaseline {
+		commit: string;
+		title: string;
+	}
 	export interface ICommitBaseline {
 		name: string;
 		value: string;
@@ -167,9 +172,13 @@
 		items: IDurInfoWrapper[];
 	}
 	export interface IConfigurationDto {
+		benchmarkList: IIndexInfo[];
 		branches: IColRepoInfo[];
 		branchNames: string[];
 		frontendConfig: IFrontendConfig;
+	}
+	export interface IFrontendConfig {
+		baselines: IBaseline[];
 	}
 	export interface ISchedulerFilter {
 		limit: number;
@@ -179,11 +188,4 @@
 		days: number;
 		info: IIndexInfo;
 		limit: number;
-	}
-	export interface IBaseline {
-		commit: string;
-		title: string;
-	}
-	export interface IFrontendConfig {
-		baselines: IBaseline[];
 	}

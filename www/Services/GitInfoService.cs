@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Cc.Net.Dto;
+using CC.Net.Dto;
 using CC.Net.Config;
 using CC.Net.Utils;
 using LibGit2Sharp;
 using Microsoft.Extensions.Logging;
+using cc.net.Extensions;
+using CC.Net.Collections.Shared;
 
 namespace CC.Net.Services
 {
@@ -21,6 +23,7 @@ namespace CC.Net.Services
 
         public Dictionary<string, GitInfo> _commits { get; }
         public FrontendConfig FrontendConfig { get; set; }
+        public List<IndexInfo> BenchmarkList { get; set; }
 
         public GitInfoService(AppOptions appOptions, ILogger<GitInfoService> logger)
         {
@@ -63,7 +66,7 @@ namespace CC.Net.Services
             }*/
         }
 
-        public FrontendConfig SetupProjects()
+        public void SetupProjects()
         {
             foreach(var project in _appOptions.Projects)
             {
@@ -85,9 +88,33 @@ namespace CC.Net.Services
                     {
                         FrontendConfig = YamlRead.Read<FrontendConfig>(configYaml);
                     }
+
+                    var benchmarksYaml = Path.Combine(location, "cihpc", "benchmarks.yaml");
+                    if (File.Exists(benchmarksYaml))
+                    {
+
+                        var data = YamlRead.Read<BenchmarksConfig>(benchmarksYaml);
+                        var benchmarks = new List<IndexInfo>();
+                        foreach(var matrix in data)
+                        {
+                            var vals = matrix.Matrix.Select(i => i.Items).ToList();
+                            var product = vals.CrossProduct().ToList();
+                            benchmarks.AddRange(product.Select(i => new IndexInfo
+                            {
+                                Test = i[0],
+                                Mesh = i[1],
+                                Cpus = i[2],
+                                Benchmark = i[3],
+                            }));
+                        }
+                        BenchmarkList = benchmarks
+                            .OrderBy(i => i.Test)
+                                .ThenBy(i => i.Benchmark)
+                                    .ThenBy(i => i.Mesh)
+                            .ToList();
+                    }
                 }
             }
-            return FrontendConfig;
         }
 
         public GitInfo Get(string sha)

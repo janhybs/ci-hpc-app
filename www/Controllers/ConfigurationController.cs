@@ -42,19 +42,17 @@ namespace cc.net.Controllers
         [Route("full")]
         public async Task<ConfigurationDto> FullConfiguration()
         {
-            var config = _gitInfo.SetupProjects();
+            _gitInfo.SetupProjects();
             var commitsCursor = await _dbService.ColTimers.DistinctAsync<string>("index.commit", "{}");
             var commits = await commitsCursor.ToListAsync();
             var branches = await _dbService.ColRepoInfo
                 .Find(i => commits.Contains(i.Commit))
                 .ToListAsync();
 
-            var a = config.Baselines.Select(i => branches.FirstOrDefault(j => j.Commit == i.Commit)).ToList();
-
-
             return new ConfigurationDto
             {
-                FrontendConfig = config,
+                FrontendConfig = _gitInfo.FrontendConfig,
+                BenchmarkList = _gitInfo.BenchmarkList,
                 Branches = branches
                     .OrderByDescending(i => i.AuthoredDatetime)
                     .ToList(),
