@@ -21,7 +21,7 @@ set(PACKAGE_DIR             /software/flow123d/packages)
 set(PETSC_DIR               \${PACKAGE_DIR}/petsc-3.8.3/)
 set(BDDCML_ROOT             \${PACKAGE_DIR}/bddcml-2.5.0/bddcml)
 set(Armadillo_ROOT_HINT     \${PACKAGE_DIR}/armadillo-8.3.4)
-set(YamlCpp_ROOT_HINT       \${PACKAGE_DIR}/yamlcpp-0.5.2)
+set(YamlCpp_ROOT_HINT       \${PACKAGE_DIR}/yamlcpp-0.6.3)
 set(PugiXml_ROOT_HINT       \${PACKAGE_DIR}/pugixml-1.9.0)
 EOF
 
