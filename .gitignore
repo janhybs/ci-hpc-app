@@ -5,3 +5,5 @@
 .vs
 .coverage
 __pycache__
+.*.*pidfile
+.log
