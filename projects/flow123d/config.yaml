@@ -17,7 +17,7 @@ git:
 
 steps:
   - name: compile
-    retries: 2
+    retries: 4
     stdout: true
     runs: !readfile utils/install.sh
     cache:
