@@ -1,0 +1,148 @@
+From 92d00c9f9ed6c1df0b1624e387f0aad2f15d5257 Mon Sep 17 00:00:00 2001
+From: Jan Brezina <jan.brezina@tul.cz>
+Date: Mon, 23 Nov 2020 19:34:43 +0100
+Subject: [PATCH] fix boost dependancy
+
+- fix only boost include for patch
+---
+ src/fields/field_algo_base.hh              | 4 ++--
+ src/fields/field_python.impl.hh            | 4 ++--
+ src/input/type_base.cc                     | 4 ++--
+ src/input/type_record.cc                   | 4 ++--
+ unit_tests/fields/field_algo_base_test.cpp | 3 ++-
+ unit_tests/input/type_base_test.cpp        | 6 +++---
+ 6 files changed, 13 insertions(+), 12 deletions(-)
+
+diff --git a/src/fields/field_algo_base.hh b/src/fields/field_algo_base.hh
+index 113b65c32..1b925c2ee 100644
+--- a/src/fields/field_algo_base.hh
++++ b/src/fields/field_algo_base.hh
+@@ -26,7 +26,7 @@
+ #define field_algo_base_HH_
+ 
+ #include <string.h>                        // for memcpy
+-#include <boost/type_traits/is_same.hpp>   // for is_same
++#include <type_traits>   // for is_same
+ #include <limits>                          // for numeric_limits
+ #include <memory>                          // for shared_ptr
+ #include <ostream>                         // for operator<<
+@@ -112,7 +112,7 @@ public:
+        // expose template parameters
+        typedef typename Space<spacedim>::Point Point;
+        static const unsigned int spacedim_=spacedim;
+-       static constexpr bool is_enum_valued = boost::is_same<typename Value::element_type, FieldEnum>::value;
++       static constexpr bool is_enum_valued = std::is_same<typename Value::element_type, FieldEnum>::value;
+ 
+ 
+        /**
+diff --git a/src/fields/field_python.impl.hh b/src/fields/field_python.impl.hh
+index ca8d1d17d..b3b35c4de 100644
+--- a/src/fields/field_python.impl.hh
++++ b/src/fields/field_python.impl.hh
+@@ -19,7 +19,7 @@
+ #define FIELD_PYTHON_IMPL_HH_
+ 
+ 
+-#include <boost/type_traits.hpp>
++#include <type_traits>
+ #include "fields/field_python.hh"
+ 
+ /// Implementation.
+@@ -199,7 +199,7 @@ void FieldPython<spacedim, Value>::set_value(FMT_UNUSED const Point &p, FMT_UNUS
+     unsigned int pos =0;
+     for(unsigned int row=0; row < value.n_rows(); row++)
+         for(unsigned int col=0; col < value.n_cols(); col++, pos++)
+-            if ( boost::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
++            if ( std::is_integral< typename Value::element_type >::value ) value(row,col) = PyLong_AsLong( PyTuple_GetItem( p_value_, pos ) );
+             else value(row,col) = PyFloat_AsDouble( PyTuple_GetItem( p_value_, pos ) );
+ 
+ #endif // FLOW123D_HAVE_PYTHON
+diff --git a/src/input/type_base.cc b/src/input/type_base.cc
+index 4f17f5190..06e78db0b 100644
+--- a/src/input/type_base.cc
++++ b/src/input/type_base.cc
+@@ -24,7 +24,7 @@
+ 
+ #include "system/system.hh"
+ 
+-#include <boost/type_traits.hpp>
++#include <type_traits>
+ #include <boost/tokenizer.hpp>
+ #include <boost/algorithm/string.hpp>
+ #include <boost/functional/hash.hpp>
+@@ -372,7 +372,7 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
+ : Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
+ {
+     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
+-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
++    static_assert( (std::is_base_of<TypeBase, ValueType >::value) );
+ }
+ 
+ // explicit instantiation
+diff --git a/src/input/type_record.cc b/src/input/type_record.cc
+index aae7882ae..76f6e4505 100644
+--- a/src/input/type_record.cc
++++ b/src/input/type_record.cc
+@@ -21,7 +21,7 @@
+ #include "input/reader_internal_base.hh"
+ #include "attribute_lib.hh"
+ 
+-#include <boost/typeof/typeof.hpp>
++#include <type_traits>
+ #include <boost/algorithm/string.hpp>
+ #include <boost/functional/hash.hpp>
+ 
+@@ -516,7 +516,7 @@ Record &Record::declare_key(const string &key, const KeyType &type,
+ // this accept only lvalues - we assume that these are not local variables
+ {
+     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
+-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, KeyType>::value) );
++    BOOST_STATIC_ASSERT( (std::is_base_of<TypeBase, KeyType>::value) );
+ 	std::shared_ptr<TypeBase> type_copy = std::make_shared<KeyType>(type);
+ 	return declare_key(key, type_copy, default_value, description, key_attributes);
+ }
+diff --git a/unit_tests/fields/field_algo_base_test.cpp b/unit_tests/fields/field_algo_base_test.cpp
+index 60d5437c6..3b7a0c25c 100644
+--- a/unit_tests/fields/field_algo_base_test.cpp
++++ b/unit_tests/fields/field_algo_base_test.cpp
+@@ -10,6 +10,7 @@
+ 
+ #include <memory>
+ #include <regex>
++#include <type_traits>
+ 
+ #include <flow_gtest_mpi.hh>
+ #include <mesh_constructor.hh>
+@@ -53,7 +54,7 @@ template <class F>
+ class FieldFix : public testing::Test, public F {
+ public:
+ 	typedef F FieldType;
+-	static constexpr bool is_enum_valued = boost::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
++	static constexpr bool is_enum_valued = std::is_same<typename FieldType::ValueType::element_type, FieldEnum>::value;
+ 
+ 	void SetUp() {
+ 	    Profiler::instance();
+diff --git a/unit_tests/input/type_base_test.cpp b/unit_tests/input/type_base_test.cpp
+index 5ce869fa2..573bd9ed5 100644
+--- a/unit_tests/input/type_base_test.cpp
++++ b/unit_tests/input/type_base_test.cpp
+@@ -36,7 +36,7 @@ TEST(InputTypeTypeBase, includes) {
+ /**
+  * Check is boost type traits can distinguish int and enum.
+  */
+-#include <boost/type_traits.hpp>
++#include <type_traits>
+ 
+ enum x_enum {
+     one=1,
+@@ -45,8 +45,8 @@ enum x_enum {
+ typedef x_enum XX;
+ 
+ TEST(BoostTypeTraits, Enum) {
+-    EXPECT_TRUE( boost::is_enum<XX>::value);
+-    EXPECT_FALSE( boost::is_integral<XX>::value);
++    EXPECT_TRUE( std::is_enum<XX>::value);
++    EXPECT_FALSE( std::is_integral<XX>::value);
+ };
+ 
+ 

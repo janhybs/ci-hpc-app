@@ -3,10 +3,13 @@ set -e
 cd flow123d
 ls -la
 
+# Patch 01
 git checkout -- src/mesh/mesh.cc || true
 git checkout -- src/fields/fe_value_handler.cc || true
 python3 /storage/liberec3-tul/home/jan-hybs/ci-hpc/projects/flow123d/patches/patch.py || true
 
+# Patch 02 boost fix
+git apply /storage/liberec3-tul/home/jan-hybs/ci-hpc/projects/flow123d/92d00c9f9ed6c1df0b1624e387f0aad2f15d5257.patch
 
 cat <<EOF > config.cmake
 # main config
