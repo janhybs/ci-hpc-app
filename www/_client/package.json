@@ -42,7 +42,7 @@
     "highcharts-react-official": "^2.2.2",
     "highlight.js": "^9.16.2",
     "jquery": "^3.4.1",
-    "merge": "^1.2.1",
+    "merge": "^2.1.1",
     "mobx": "^5.14.2",
     "mobx-react": "^6.1.4",
     "moment": "^2.24.0",
